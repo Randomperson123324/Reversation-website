@@ -30,19 +30,17 @@ const DEPARTMENTS = [
   "อื่นๆ",
 ];
 
-// Time slot groups for display
-const MORNING_SLOTS = TIME_OPTIONS.filter((t) => t < "12:00");
-const AFTERNOON_SLOTS = TIME_OPTIONS.filter((t) => t >= "12:00" && t < "18:00");
+// All selectable start slots (exclude last entry which is end-only)
+const ALL_SLOTS = TIME_OPTIONS.slice(0, -1); // 08:00 .. 17:30
 
 function StepIndicator({ step, current }: { step: number; current: number }) {
   const done = current > step;
   const active = current === step;
   return (
-    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
-      done ? "bg-primary-600 border-primary-500 text-white" :
-      active ? "border-primary-400 text-primary-300 bg-primary-900/40" :
-      "border-slate-700 text-slate-600"
-    }`}>
+    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${done ? "bg-primary-600 border-primary-500 text-white" :
+        active ? "border-primary-400 text-primary-300 bg-primary-900/40" :
+          "border-slate-700 text-slate-600"
+      }`}>
       {done ? <CheckCircle size={16} /> : step}
     </div>
   );
@@ -69,6 +67,9 @@ function ReserveContent() {
   const [selectedRooms, setSelectedRooms] = useState<string[]>([]);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  // Tap-to-select: track which room is being edited and first tap
+  const [tapRoom, setTapRoom] = useState<string | null>(null);
+  const [tapStart, setTapStart] = useState<string | null>(null);
 
   // Step 3 – equipment
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment[]>([]);
@@ -151,6 +152,54 @@ function ReserveContent() {
       (r) => !(e <= r.start_time.slice(0, 5) || s >= r.end_time.slice(0, 5))
     );
 
+  // Tap-to-select time range on a room's slot grid
+  const handleSlotTap = (roomId: string, slot: string) => {
+    if (isSlotBooked(roomId, slot)) return; // can't pick booked slot
+
+    if (!tapStart || tapRoom !== roomId) {
+      // First tap: set start, select the room
+      setTapRoom(roomId);
+      setTapStart(slot);
+      setSelectedRooms((prev) => prev.includes(roomId) ? prev : [...prev, roomId]);
+      setStartTime(slot);
+      setEndTime("");
+    } else {
+      // Second tap: set end (must be after start)
+      const s = tapStart < slot ? tapStart : slot;
+      const e = tapStart < slot ? slot : tapStart;
+      // end is the next slot after the tapped one
+      const eIdx = ALL_SLOTS.indexOf(e);
+      const endSlot = TIME_OPTIONS[eIdx + 1] || "18:00";
+
+      // Check no booked slot in range
+      const rangeSlots = ALL_SLOTS.slice(ALL_SLOTS.indexOf(s), ALL_SLOTS.indexOf(e) + 1);
+      const hasBooked = rangeSlots.some((sl) => isSlotBooked(roomId, sl));
+      if (hasBooked) {
+        toast.error("ช่วงเวลาที่เลือกมีการจองอยู่ กรุณาเลือกใหม่");
+        setTapStart(slot);
+        setStartTime(slot);
+        setEndTime("");
+        return;
+      }
+
+      setStartTime(s);
+      setEndTime(endSlot);
+      setTapStart(null);
+      setTapRoom(null);
+    }
+  };
+
+  // Helper: is slot in current selection range?
+  const isSlotInRange = (roomId: string, slot: string) => {
+    if (!startTime || !endTime) return false;
+    if (tapRoom && tapRoom !== roomId) return false;
+    const slotEnd = TIME_OPTIONS[TIME_OPTIONS.indexOf(slot) + 1] || "18:30";
+    return slot >= startTime && slotEnd <= endTime;
+  };
+
+  const isSlotPending = (roomId: string, slot: string) =>
+    tapRoom === roomId && tapStart === slot;
+
   const toggleRoom = (id: string) => {
     setSelectedRooms((prev) =>
       prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
@@ -232,9 +281,8 @@ function ReserveContent() {
             <div key={n} className="flex items-center gap-2 flex-shrink-0">
               <div className="flex items-center gap-2">
                 <StepIndicator step={n} current={step} />
-                <span className={`text-sm font-medium whitespace-nowrap ${
-                  step === n ? "text-primary-300" : step > n ? "text-slate-400" : "text-slate-600"
-                }`}>{label}</span>
+                <span className={`text-sm font-medium whitespace-nowrap ${step === n ? "text-primary-300" : step > n ? "text-slate-400" : "text-slate-600"
+                  }`}>{label}</span>
               </div>
               {i < arr.length - 1 && (
                 <div className={`w-8 h-px mx-1 ${step > n ? "bg-primary-600" : "bg-slate-700"}`} />
@@ -298,7 +346,7 @@ function ReserveContent() {
                     className={`relative aspect-square flex flex-col items-center justify-center rounded-xl text-sm font-medium transition-all disabled:opacity-25 disabled:cursor-not-allowed
                       ${isSelected ? "bg-primary-600 text-white shadow-glow scale-105"
                         : isCurrentDay ? "border-2 border-accent-500/60 text-accent-300 hover:bg-white/5"
-                        : "text-slate-300 hover:bg-white/5 hover:text-white"}`}
+                          : "text-slate-300 hover:bg-white/5 hover:text-white"}`}
                   >
                     <span>{format(day, "d")}</span>
                     {(has601 || has605) && (
@@ -349,27 +397,29 @@ function ReserveContent() {
               </p>
             </div>
 
-            {/* Room cards with time slots */}
+            {/* How-to hint */}
+            <div className="px-4 py-2.5 rounded-xl bg-primary-900/20 border border-primary-700/20 text-xs text-primary-300 flex items-center gap-2">
+              <Clock size={13} />
+              แตะช่องเวลาที่ต้องการ (ครั้งแรก = เวลาเริ่ม, ครั้งที่สอง = เวลาจบ) สีเขียวคือว่าง สีแดงคือถูกจอง
+            </div>
+
+            {/* Room cards with tappable slots */}
             {ROOMS.map((room) => {
               const roomRes = getRoomReservations(room.id);
-              const isSelected = selectedRooms.includes(room.id);
+              const isRoomSelected = selectedRooms.includes(room.id);
+              const isThisRoomTapping = tapRoom === room.id;
+              const thisRoomHasTime = isRoomSelected && startTime && endTime && tapRoom !== room.id;
 
               return (
-                <div key={room.id} className={`glass rounded-2xl border-2 transition-all overflow-hidden ${
-                  isSelected ? "border-primary-500" : "border-white/10"
-                }`}>
+                <div key={room.id} className={`glass rounded-2xl border-2 transition-all overflow-hidden ${isRoomSelected ? "border-primary-500" : "border-white/10"
+                  }`}>
                   {/* Room header */}
-                  <button
-                    type="button"
-                    onClick={() => toggleRoom(room.id)}
-                    className="w-full flex items-center justify-between p-5 text-left"
-                  >
+                  <div className="flex items-center justify-between p-5">
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-display font-bold text-lg ${
-                        room.id === "smc-601"
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-display font-bold text-lg ${room.id === "smc-601"
                           ? "bg-accent-500/20 text-accent-300 border border-accent-500/30"
                           : "bg-primary-500/20 text-primary-300 border border-primary-500/30"
-                      }`}>
+                        }`}>
                         {room.id === "smc-601" ? "601" : "605"}
                       </div>
                       <div>
@@ -379,66 +429,102 @@ function ReserveContent() {
                         </p>
                       </div>
                     </div>
-                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-                      isSelected ? "bg-primary-500 border-primary-400" : "border-slate-600"
-                    }`}>
-                      {isSelected && <CheckCircle size={14} className="text-white" />}
-                    </div>
-                  </button>
+                    {/* Show selected time badge or checkbox */}
+                    {isRoomSelected && startTime && endTime && !isThisRoomTapping ? (
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-primary-600/30 text-primary-300 border border-primary-500/30">
+                          {startTime} – {endTime} น.
+                        </span>
+                        <button type="button" onClick={() => {
+                          setStartTime(""); setEndTime("");
+                          setSelectedRooms((p) => p.filter((r) => r !== room.id));
+                        }} className="text-slate-500 hover:text-red-400 transition-colors text-xs">✕</button>
+                      </div>
+                    ) : (
+                      <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${isRoomSelected ? "bg-primary-500 border-primary-400" : "border-slate-600"
+                        }`}>
+                        {isRoomSelected && <CheckCircle size={14} className="text-white" />}
+                      </div>
+                    )}
+                  </div>
 
-                  {/* Time slot grid */}
+                  {/* Slot grid */}
                   <div className="px-5 pb-5">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">ช่วงเวลาว่าง</p>
+                    {isThisRoomTapping && (
+                      <p className="text-xs text-amber-300 mb-3 flex items-center gap-1.5">
+                        <AlertTriangle size={11} />
+                        เลือกแล้ว {tapStart} น. — แตะช่องสิ้นสุด
+                      </p>
+                    )}
 
-                    {/* Morning */}
                     <div className="mb-3">
-                      <p className="text-xs text-slate-500 mb-2">ช่วงเช้า (08:00 - 12:00)</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {MORNING_SLOTS.map((slot, i) => {
-                          const slotEnd = MORNING_SLOTS[i + 1] || "12:00";
+                      <p className="text-xs text-slate-500 mb-2">ช่วงเช้า (08:00 – 12:00)</p>
+                      <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+                        {ALL_SLOTS.filter((t) => t < "12:00").map((slot) => {
                           const booked = isSlotBooked(room.id, slot);
+                          const inRange = isSlotInRange(room.id, slot);
+                          const pending = isSlotPending(room.id, slot);
                           return (
-                            <div key={slot} className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                              booked
-                                ? "bg-red-900/20 border-red-700/30 text-red-400"
-                                : "bg-emerald-900/20 border-emerald-700/30 text-emerald-400"
-                            }`}>
+                            <button
+                              key={slot}
+                              type="button"
+                              disabled={booked}
+                              onClick={() => handleSlotTap(room.id, slot)}
+                              className={`py-2 rounded-lg text-xs font-medium border transition-all select-none
+                                ${booked
+                                  ? "bg-red-900/20 border-red-700/30 text-red-400 cursor-not-allowed"
+                                  : pending
+                                    ? "bg-amber-500/30 border-amber-400/50 text-amber-300 scale-105 shadow-md"
+                                    : inRange
+                                      ? "bg-primary-600/40 border-primary-400/50 text-primary-200 scale-[1.02]"
+                                      : "bg-emerald-900/20 border-emerald-700/30 text-emerald-400 hover:bg-emerald-700/30 hover:scale-105 cursor-pointer"
+                                }`}
+                            >
                               {slot}
-                              {booked && " ✕"}
-                            </div>
+                            </button>
                           );
                         })}
                       </div>
                     </div>
 
-                    {/* Afternoon */}
                     <div>
-                      <p className="text-xs text-slate-500 mb-2">ช่วงบ่าย (12:00 - 18:00)</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {AFTERNOON_SLOTS.map((slot) => {
+                      <p className="text-xs text-slate-500 mb-2">ช่วงบ่าย (12:00 – 18:00)</p>
+                      <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
+                        {ALL_SLOTS.filter((t) => t >= "12:00").map((slot) => {
                           const booked = isSlotBooked(room.id, slot);
+                          const inRange = isSlotInRange(room.id, slot);
+                          const pending = isSlotPending(room.id, slot);
                           return (
-                            <div key={slot} className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
-                              booked
-                                ? "bg-red-900/20 border-red-700/30 text-red-400"
-                                : "bg-emerald-900/20 border-emerald-700/30 text-emerald-400"
-                            }`}>
+                            <button
+                              key={slot}
+                              type="button"
+                              disabled={booked}
+                              onClick={() => handleSlotTap(room.id, slot)}
+                              className={`py-2 rounded-lg text-xs font-medium border transition-all select-none
+                                ${booked
+                                  ? "bg-red-900/20 border-red-700/30 text-red-400 cursor-not-allowed"
+                                  : pending
+                                    ? "bg-amber-500/30 border-amber-400/50 text-amber-300 scale-105 shadow-md"
+                                    : inRange
+                                      ? "bg-primary-600/40 border-primary-400/50 text-primary-200 scale-[1.02]"
+                                      : "bg-emerald-900/20 border-emerald-700/30 text-emerald-400 hover:bg-emerald-700/30 hover:scale-105 cursor-pointer"
+                                }`}
+                            >
                               {slot}
-                              {booked && " ✕"}
-                            </div>
+                            </button>
                           );
                         })}
                       </div>
                     </div>
 
-                    {/* Existing bookings list */}
+                    {/* Existing bookings */}
                     {roomRes.length > 0 && (
                       <div className="mt-3 space-y-1.5">
                         {roomRes.map((r) => (
-                          <div key={r.id} className="flex items-center gap-2 text-xs text-slate-400 bg-surface-800/40 rounded-lg px-3 py-2">
+                          <div key={r.id} className="flex items-center gap-2 text-xs bg-red-900/10 border border-red-800/20 rounded-lg px-3 py-2">
                             <Clock size={11} className="text-red-400 flex-shrink-0" />
-                            <span className="text-red-300 font-medium">{r.start_time.slice(0,5)} - {r.end_time.slice(0,5)} น.</span>
-                            <span className="truncate">{r.title}</span>
+                            <span className="text-red-300 font-medium">{r.start_time.slice(0, 5)} - {r.end_time.slice(0, 5)} น.</span>
+                            <span className="text-slate-400 truncate">{r.title}</span>
                           </div>
                         ))}
                       </div>
@@ -448,64 +534,18 @@ function ReserveContent() {
               );
             })}
 
-            {/* Time range picker */}
-            {selectedRooms.length > 0 && (
-              <div className="glass rounded-2xl p-5 border border-primary-700/20">
-                <h3 className="font-display font-semibold text-white mb-4 flex items-center gap-2">
-                  <Clock size={16} className="text-primary-400" /> เลือกช่วงเวลา
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">เวลาเริ่มต้น</label>
-                    <select
-                      value={startTime}
-                      onChange={(e) => { setStartTime(e.target.value); setEndTime(""); }}
-                      className="w-full px-4 py-3 rounded-xl input-dark text-sm cursor-pointer"
-                    >
-                      <option value="" disabled>เลือกเวลาเริ่มต้น</option>
-                      {TIME_OPTIONS.slice(0, -1).map((t) => (
-                        <option key={t} value={t}>{t} น.</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-1.5">เวลาสิ้นสุด</label>
-                    <select
-                      value={endTime}
-                      onChange={(e) => setEndTime(e.target.value)}
-                      disabled={!startTime}
-                      className="w-full px-4 py-3 rounded-xl input-dark text-sm cursor-pointer disabled:opacity-40"
-                    >
-                      <option value="" disabled>{startTime ? "เลือกเวลาสิ้นสุด" : "เลือกเวลาเริ่มก่อน"}</option>
-                      {endTimeOptions.map((t) => (
-                        <option key={t} value={t}>{t} น.</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {startTime && endTime && hasAnyConflict && (
-                  <div className="mt-3 p-3 rounded-xl bg-red-900/20 border border-red-700/30 flex items-center gap-2 text-sm text-red-300">
-                    <AlertTriangle size={14} /> ช่วงเวลานี้ทับซ้อนกับการจองที่มีอยู่
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* Legend */}
-            <div className="flex items-center gap-4 text-xs text-slate-400">
-              <span className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded bg-emerald-900/40 border border-emerald-700/30" /> ว่าง
-              </span>
-              <span className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded bg-red-900/40 border border-red-700/30" /> ไม่ว่าง
-              </span>
+            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400">
+              <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-emerald-900/30 border border-emerald-700/30" />ว่าง (แตะเพื่อเลือก)</span>
+              <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-500/30 border border-amber-400/50" />เลือกเวลาเริ่ม</span>
+              <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-primary-600/40 border border-primary-400/50" />ช่วงที่เลือก</span>
+              <span className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-red-900/30 border border-red-700/30" />ถูกจองแล้ว</span>
             </div>
 
             <div className="flex justify-end">
               <button
                 type="button"
-                disabled={selectedRooms.length === 0 || !startTime || !endTime || hasAnyConflict}
+                disabled={selectedRooms.length === 0 || !startTime || !endTime || !!tapStart}
                 onClick={() => setStep(3)}
                 className="px-6 py-2.5 rounded-xl btn-accent font-semibold text-sm flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
               >
@@ -538,13 +578,11 @@ function ReserveContent() {
                     key={eq.id}
                     type="button"
                     onClick={() => toggleEquipment(eq.id)}
-                    className={`flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all ${
-                      active ? "border-primary-500 bg-primary-600/20" : "border-white/10 hover:border-primary-600/30 hover:bg-primary-900/10"
-                    }`}
+                    className={`flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all ${active ? "border-primary-500 bg-primary-600/20" : "border-white/10 hover:border-primary-600/30 hover:bg-primary-900/10"
+                      }`}
                   >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
-                      active ? "bg-primary-600 text-white" : "bg-white/10 text-slate-400"
-                    }`}>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${active ? "bg-primary-600 text-white" : "bg-white/10 text-slate-400"
+                      }`}>
                       {IconComp && <IconComp size={22} />}
                     </div>
                     <span className={`text-sm font-medium text-center leading-tight ${active ? "text-primary-300" : "text-slate-400"}`}>
