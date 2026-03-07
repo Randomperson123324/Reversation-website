@@ -21,13 +21,12 @@ const WEEKDAYS = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 const ICON_MAP: Record<string, React.ElementType> = { BarChart2, Projector, Volume2 };
 
 const DEPARTMENTS = [
-  "วิทยาการคอมพิวเตอร์",
-  "เทคโนโลยีสารสนเทศ",
-  "วิศวกรรมซอฟต์แวร์",
-  "ระบบสารสนเทศทางธุรกิจ",
-  "เทคโนโลยีมัลติมีเดีย",
-  "วิศวกรรมคอมพิวเตอร์",
-  "อื่นๆ",
+  "วิชาการพยาบาลผู้ใหญ่และผู้สูงอายุ",
+  "วิชาการพยาบาลอนามันในชุมชน",
+  "วิชาการพยาบาลจิคเวชและสุขภาพจิต",
+  "วิชาการพยาบาลเด็ก",
+  "วิชาการพยาบาล มารดา ทารก และการผดุงครรภ์",
+  "วิชาการพยาบาลพื้นฐานและการบริหารพยาบาล",
 ];
 
 // All tappable slots (start times)
@@ -41,8 +40,8 @@ function StepIndicator({ step, current }: { step: number; current: number }) {
   const done = current > step;
   return (
     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${done ? "bg-primary-600 border-primary-500 text-white" :
-        current === step ? "border-primary-400 text-primary-300 bg-primary-900/40" :
-          "border-slate-700 text-slate-600"
+      current === step ? "border-primary-400 text-primary-300 bg-primary-900/40" :
+        "border-slate-700 text-slate-600"
       }`}>
       {done ? <CheckCircle size={16} /> : step}
     </div>
@@ -448,8 +447,8 @@ function ReserveContent() {
                     className="w-full flex items-center justify-between p-5 text-left hover:bg-white/[0.02] transition-all">
                     <div className="flex items-center gap-4">
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-display font-bold text-lg flex-shrink-0 ${room.id === "smc-601"
-                          ? "bg-accent-500/20 text-accent-300 border border-accent-500/30"
-                          : "bg-primary-500/20 text-primary-300 border border-primary-500/30"
+                        ? "bg-accent-500/20 text-accent-300 border border-accent-500/30"
+                        : "bg-primary-500/20 text-primary-300 border border-primary-500/30"
                         }`}>
                         {room.id === "smc-601" ? "601" : "605"}
                       </div>
