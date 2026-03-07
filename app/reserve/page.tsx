@@ -296,7 +296,7 @@ function ReserveContent() {
     });
 
     if (error) toast.error("เกิดข้อผิดพลาด: " + error.message);
-    else { toast.success("จองห้องสำเร็จ! 🎉"); router.push("/my-reservations"); }
+    else { toast.success("จองห้องสำเร็จ!"); router.push("/my-reservations"); }
     setSubmitting(false);
   };
 
@@ -314,9 +314,9 @@ function ReserveContent() {
         <div className="absolute inset-0 bg-gradient-to-b from-primary-950/50 to-transparent" />
         <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-10">
           <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mb-2">
-            <span className="gradient-text">จองห้องประชุม</span>
+            <span className="gradient-text">จองห้อง Smart Classroom</span>
           </h1>
-          <p className="text-slate-400">กรอกข้อมูลทีละขั้นตอนเพื่อจองห้องประชุม</p>
+          <p className="text-slate-400">กรอกข้อมูลทีละขั้นตอนเพื่อจองห้อง Smart Classroom</p>
         </div>
       </div>
 

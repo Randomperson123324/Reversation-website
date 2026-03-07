@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
-import { Mail, Lock, Eye, EyeOff, Building2, ArrowLeft, Phone, GraduationCap } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Building2, ArrowLeft } from "lucide-react";
 
 type Mode = "login" | "register" | "forgot";
 
@@ -49,8 +49,6 @@ function LoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [phoneInternal, setPhoneInternal] = useState("");
-  const [department, setDepartment] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -104,8 +102,6 @@ function LoginContent() {
           id: data.user.id,
           email,
           full_name: fullName,
-          phone_internal: phoneInternal || null,
-          department: department || null,
         });
       }
       toast.success("ส่งอีเมลยืนยันแล้ว! กรุณาตรวจสอบกล่องจดหมายของคุณ");
@@ -193,10 +189,10 @@ function LoginContent() {
                 className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-white/15 bg-white/5 hover:bg-white/10 text-white font-medium transition-all disabled:opacity-50 mb-4"
               >
                 <svg width="18" height="18" viewBox="0 0 18 18">
-                  <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
-                  <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
-                  <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/>
-                  <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z"/>
+                  <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z" />
+                  <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z" />
+                  <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z" />
+                  <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.3z" />
                 </svg>
                 เข้าสู่ระบบด้วย Google
               </button>
@@ -249,29 +245,6 @@ function LoginContent() {
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-              </div>
-            )}
-
-            {/* Register extra fields */}
-            {mode === "register" && (
-              <div className="border-t border-white/5 pt-4 space-y-4">
-                <p className="text-xs text-slate-500 uppercase tracking-wide font-medium">ข้อมูลเพิ่มเติม</p>
-                <InputField
-                  label="เบอร์ติดต่อภายใน"
-                  value={phoneInternal}
-                  onChange={setPhoneInternal}
-                  placeholder="เช่น 1234"
-                  icon={Phone}
-                  optional
-                />
-                <InputField
-                  label="สาขาวิชา"
-                  value={department}
-                  onChange={setDepartment}
-                  placeholder="เช่น วิทยาการคอมพิวเตอร์"
-                  icon={GraduationCap}
-                  optional
-                />
               </div>
             )}
 
