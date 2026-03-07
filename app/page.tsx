@@ -98,7 +98,7 @@ export default function HomePage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-up delay-300">
               <Link href="/reserve" className="group flex items-center justify-center gap-3 px-8 py-4 rounded-xl btn-accent font-display font-semibold text-lg shadow-glow-accent">
                 <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
-                จองห้องประชุม
+                จองห้อง SMC
               </Link>
               <Link href="/my-reservations" className="group flex items-center justify-center gap-3 px-8 py-4 rounded-xl glass border border-primary-500/30 text-white font-display font-semibold text-lg hover:bg-primary-600/20 hover:border-primary-400/50 transition-all">
                 <Calendar size={20} />
@@ -149,16 +149,14 @@ export default function HomePage() {
                 const stats = getMonthStats(room.id);
                 const isRoom601 = room.id === "smc-601";
                 return (
-                  <div key={room.id} className={`rounded-xl p-4 border mb-3 last:mb-0 ${
-                    isRoom601 ? "bg-accent-500/10 border-accent-500/20" : "bg-primary-500/10 border-primary-500/20"
-                  }`}>
+                  <div key={room.id} className={`rounded-xl p-4 border mb-3 last:mb-0 ${isRoom601 ? "bg-accent-500/10 border-accent-500/20" : "bg-primary-500/10 border-primary-500/20"
+                    }`}>
                     <div className="flex items-center justify-between mb-3">
                       <span className={`font-display font-bold text-lg ${isRoom601 ? "text-accent-300" : "text-primary-300"}`}>
                         {room.name}
                       </span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        isRoom601 ? "bg-accent-500/20 text-accent-300" : "bg-primary-500/20 text-primary-300"
-                      }`}>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${isRoom601 ? "bg-accent-500/20 text-accent-300" : "bg-primary-500/20 text-primary-300"
+                        }`}>
                         {stats.count} ครั้ง
                       </span>
                     </div>
@@ -209,9 +207,8 @@ export default function HomePage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 mb-0.5">
                             {ids.map((id) => (
-                              <span key={id} className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                                id === "smc-601" ? "bg-accent-500/20 text-accent-300" : "bg-primary-500/20 text-primary-300"
-                              }`}>
+                              <span key={id} className={`text-xs px-1.5 py-0.5 rounded font-medium ${id === "smc-601" ? "bg-accent-500/20 text-accent-300" : "bg-primary-500/20 text-primary-300"
+                                }`}>
                                 {id === "smc-601" ? "601" : "605"}
                               </span>
                             ))}
@@ -285,7 +282,7 @@ export default function HomePage() {
                         relative aspect-square flex flex-col items-center justify-center rounded-xl text-sm font-medium transition-all
                         ${isSelected ? "bg-primary-600 text-white shadow-glow scale-105"
                           : isCurrentDay ? "border-2 border-accent-500/60 text-accent-300 hover:bg-white/5"
-                          : "text-slate-300 hover:bg-white/5 hover:text-white"}
+                            : "text-slate-300 hover:bg-white/5 hover:text-white"}
                       `}
                     >
                       <span>{format(day, "d")}</span>
