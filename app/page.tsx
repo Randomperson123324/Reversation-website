@@ -90,10 +90,10 @@ export default function HomePage() {
             <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold mb-4 animate-fade-up delay-100">
               <span className="text-white">ยินดีต้อนรับเข้าสู่</span>
               <br />
-              <span className="gradient-text">ระบบจองห้อง SMC</span>
+              <span className="gradient-text">ระบบจองห้อง Smart Classroom</span>
             </h1>
             <p className="text-slate-300 text-lg sm:text-xl max-w-2xl mx-auto mb-10 animate-fade-up delay-200">
-              จองห้องประชุม SMC 601 และ SMC 605 ได้อย่างสะดวก รวดเร็ว และง่ายดาย
+              จองห้อง Smart Classroom SMC 601 และ SMC 605 ได้ที่นี่
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-up delay-300">
               <Link href="/reserve" className="group flex items-center justify-center gap-3 px-8 py-4 rounded-xl btn-accent font-display font-semibold text-lg shadow-glow-accent">
@@ -310,7 +310,7 @@ export default function HomePage() {
       </section>
 
       <footer className="border-t border-white/5 py-6 text-center text-sm text-slate-500">
-        <p>© 2024 SMC Room Booking System · พัฒนาด้วย ❤️ สำหรับ SMC</p>
+        <p>Smart Classroom reservation system</p>
       </footer>
     </div>
   );
