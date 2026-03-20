@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isBefore, startOfDay } from "date-fns";
 import { th } from "date-fns/locale";
 import { Reservation } from "@/types";
 import Navbar from "@/components/Navbar";
-import { Plus, Calendar, BarChart3, ChevronLeft, ChevronRight, Clock, Building2 } from "lucide-react";
+import { Plus, Calendar, BarChart3, ChevronLeft, ChevronRight, Clock } from "lucide-react";
 
 const WEEKDAYS = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 const ROOMS = [
@@ -71,8 +72,8 @@ export default function HomePage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden pt-16">
-        <div className="absolute inset-0 bg-hero-gradient opacity-90" />
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-hero-gradient opacity-90 pointer-events-none" />
+        <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-600/20 rounded-full blur-3xl" />
           <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-accent-500/15 rounded-full blur-3xl" />
           <div className="absolute inset-0 opacity-10" style={{
@@ -83,17 +84,16 @@ export default function HomePage() {
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-16 sm:py-24">
           <div className="text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-light text-primary-300 text-sm font-medium mb-6 animate-fade-up">
-              <Building2 size={14} />
-              ระบบจองห้องประชุม SMC
+            <div className="inline-flex items-center mb-6 animate-fade-up">
+              <Image src="/header-logo.png" alt="SMC Logo" width={220} height={60} className="object-contain" />
             </div>
             <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold mb-4 animate-fade-up delay-100">
               <span className="text-white">ยินดีต้อนรับเข้าสู่</span>
               <br />
-              <span className="gradient-text">ระบบจองห้อง Smart Classroom</span>
+              <span className="gradient-text">ระบบจองห้อง SMC</span>
             </h1>
             <p className="text-slate-300 text-lg sm:text-xl max-w-2xl mx-auto mb-10 animate-fade-up delay-200">
-              สามารถจองห้องประชุม SMC 601 และ SMC 605 ได้
+              จองห้องประชุม SMC 601 และ SMC 605 ได้อย่างสะดวก รวดเร็ว และง่ายดาย
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-up delay-300">
               <Link href="/reserve" className="group flex items-center justify-center gap-3 px-8 py-4 rounded-xl btn-accent font-display font-semibold text-lg shadow-glow-accent">
@@ -315,8 +315,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="border-t border-white/5 py-6 text-center text-sm text-slate-500">
-        <p>SMC Room Booking System</p>
+      <footer className="border-t border-white/5 py-8 flex justify-center">
+        <Image src="/footer-logo.png" alt="SMC Footer Logo" width={180} height={60} className="object-contain opacity-70" />
       </footer>
     </div>
   );
