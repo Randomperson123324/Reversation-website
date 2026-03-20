@@ -9,9 +9,9 @@ export type Room = {
 export type Equipment = "bi_machine" | "visual_system" | "audio_system";
 
 export const EQUIPMENT_OPTIONS: { id: Equipment; label: string; iconName: string }[] = [
-  { id: "bi_machine",    label: "เครื่อง BI", iconName: "BarChart2" },
-  { id: "visual_system", label: "ระบบภาพ",    iconName: "Projector" },
-  { id: "audio_system",  label: "ระบบเสียง",  iconName: "Volume2"   },
+  { id: "bi_machine", label: "เครื่อง BI", iconName: "BarChart2" },
+  { id: "visual_system", label: "ระบบภาพ", iconName: "Projector" },
+  { id: "audio_system", label: "ระบบเสียง", iconName: "Volume2" },
 ];
 
 export type Reservation = {
@@ -32,10 +32,8 @@ export type Reservation = {
 };
 
 export const TIME_OPTIONS = [
-  "08:00","08:30","09:00","09:30","10:00","10:30",
-  "11:00","11:30","12:00","12:30","13:00","13:30",
-  "14:00","14:30","15:00","15:30","16:00","16:30",
-  "17:00","17:30","18:00",
+  "07:00", "08:00", "09:00", "10:00", "11:00", "12:00",
+  "13:00", "14:00", "15:00", "16:00", "17:00", "18:00",
 ];
 
 export const ROOMS: Room[] = [

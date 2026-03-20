@@ -70,9 +70,6 @@ function RoomSlotGrid({
     return "bg-emerald-900/20 border-emerald-700/30 text-emerald-400 hover:bg-emerald-700/30 hover:scale-105 cursor-pointer";
   };
 
-  const morning = ALL_SLOTS.filter((t) => t < "12:00");
-  const afternoon = ALL_SLOTS.filter((t) => t >= "12:00");
-
   return (
     <div className="space-y-4 pt-1">
       {/* Hint */}
@@ -85,34 +82,16 @@ function RoomSlotGrid({
             : `เลือกแล้ว: ${roomTime.start} – ${roomTime.end} น.`}
       </div>
 
-      {/* Morning */}
-      <div>
-        <p className="text-xs text-slate-500 mb-2">ช่วงเช้า (08:00 – 12:00)</p>
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
-          {morning.map((slot) => (
-            <button key={slot} type="button"
-              disabled={isSlotBooked(slot)}
-              onClick={() => onTap(slot)}
-              className={`py-2 rounded-lg text-xs font-medium border transition-all select-none ${slotClass(slot)}`}>
-              {slot}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Afternoon */}
-      <div>
-        <p className="text-xs text-slate-500 mb-2">ช่วงบ่าย (12:00 – 18:00)</p>
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5">
-          {afternoon.map((slot) => (
-            <button key={slot} type="button"
-              disabled={isSlotBooked(slot)}
-              onClick={() => onTap(slot)}
-              className={`py-2 rounded-lg text-xs font-medium border transition-all select-none ${slotClass(slot)}`}>
-              {slot}
-            </button>
-          ))}
-        </div>
+      {/* All slots */}
+      <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
+        {ALL_SLOTS.map((slot) => (
+          <button key={slot} type="button"
+            disabled={isSlotBooked(slot)}
+            onClick={() => onTap(slot)}
+            className={`py-2.5 rounded-lg text-xs font-medium border transition-all select-none ${slotClass(slot)}`}>
+            {slot}
+          </button>
+        ))}
       </div>
 
       {/* Existing bookings */}
