@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
@@ -21,6 +22,7 @@ export default function HomePage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
   const supabase = createClient();
 
   const fetchReservations = useCallback(async () => {
@@ -284,6 +286,7 @@ export default function HomePage() {
                     <button
                       key={day.toString()}
                       onClick={() => setSelectedDate(day)}
+                      onDoubleClick={() => router.push(`/reserve?date=${format(day, "yyyy-MM-dd")}`)}
                       className={`
                         relative aspect-square flex flex-col items-center justify-center rounded-xl text-sm font-medium transition-all
                         ${isSelected ? "bg-primary-600 text-white shadow-glow scale-105"
