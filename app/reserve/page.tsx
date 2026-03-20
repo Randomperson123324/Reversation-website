@@ -62,11 +62,11 @@ function RoomSlotGrid({
   const slotClass = (slot: string) => {
     const booked = isSlotBooked(slot);
     if (booked) return "bg-red-900/20 border-red-700/30 text-red-400 cursor-not-allowed opacity-60";
-    const inRange = roomTime.start && roomTime.end && slot >= roomTime.start && slot < roomTime.end;
+    const inRange = roomTime.start && roomTime.end && slot >= roomTime.start && slot <= roomTime.end;
     const isPending = roomTime.tapStart === slot;
     if (isPending) return "bg-amber-500/30 border-amber-400/50 text-amber-200 scale-105 shadow-lg";
     if (inRange) return "bg-primary-600/50 border-primary-400/60 text-white scale-[1.02]";
-    if (slot === "18:00" && !roomTime.tapStart) return "bg-white/5 border-white/10 text-slate-500 cursor-not-allowed";
+    if (slot === "18:00" && !roomTime.tapStart && !roomTime.start) return "bg-white/5 border-white/10 text-slate-500 cursor-not-allowed";
     return "bg-emerald-900/20 border-emerald-700/30 text-emerald-400 hover:bg-emerald-700/30 hover:scale-105 cursor-pointer";
   };
 
@@ -86,7 +86,7 @@ function RoomSlotGrid({
       <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
         {ALL_SLOTS.map((slot) => (
           <button key={slot} type="button"
-            disabled={isSlotBooked(slot) || (slot === "18:00" && !roomTime.tapStart)}
+            disabled={isSlotBooked(slot) || (slot === "18:00" && !roomTime.tapStart && !roomTime.start)}
             onClick={() => onTap(slot)}
             className={`py-2.5 rounded-lg text-xs font-medium border transition-all select-none ${slotClass(slot)}`}>
             {slot}
