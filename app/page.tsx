@@ -90,10 +90,10 @@ export default function HomePage() {
             <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold mb-4 animate-fade-up delay-100">
               <span className="text-white">ยินดีต้อนรับเข้าสู่</span>
               <br />
-              <span className="gradient-text">ระบบจองห้อง SMC</span>
+              <span className="gradient-text">ระบบจองห้อง Smart Classroom</span>
             </h1>
             <p className="text-slate-300 text-lg sm:text-xl max-w-2xl mx-auto mb-10 animate-fade-up delay-200">
-              จองห้องประชุม SMC 601 และ SMC 605 ได้อย่างสะดวก รวดเร็ว และง่ายดาย
+              สามารถจองห้องประชุม SMC 601 และ SMC 605 ได้
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-up delay-300">
               <Link href="/reserve" className="group flex items-center justify-center gap-3 px-8 py-4 rounded-xl btn-accent font-display font-semibold text-lg shadow-glow-accent">
@@ -149,16 +149,14 @@ export default function HomePage() {
                 const stats = getMonthStats(room.id);
                 const isRoom601 = room.id === "smc-601";
                 return (
-                  <div key={room.id} className={`rounded-xl p-4 border mb-3 last:mb-0 ${
-                    isRoom601 ? "bg-accent-500/10 border-accent-500/20" : "bg-primary-500/10 border-primary-500/20"
-                  }`}>
+                  <div key={room.id} className={`rounded-xl p-4 border mb-3 last:mb-0 ${isRoom601 ? "bg-accent-500/10 border-accent-500/20" : "bg-primary-500/10 border-primary-500/20"
+                    }`}>
                     <div className="flex items-center justify-between mb-3">
                       <span className={`font-display font-bold text-lg ${isRoom601 ? "text-accent-300" : "text-primary-300"}`}>
                         {room.name}
                       </span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                        isRoom601 ? "bg-accent-500/20 text-accent-300" : "bg-primary-500/20 text-primary-300"
-                      }`}>
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${isRoom601 ? "bg-accent-500/20 text-accent-300" : "bg-primary-500/20 text-primary-300"
+                        }`}>
                         {stats.count} ครั้ง
                       </span>
                     </div>
@@ -200,27 +198,32 @@ export default function HomePage() {
                   <p className="text-sm text-slate-400">ไม่มีการจองในวันนี้</p>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto">
+                <div className="space-y-2 max-h-56 overflow-y-auto">
                   {selectedDateReservations.map((res) => {
                     const ids: string[] = res.room_ids?.length ? res.room_ids : res.room_id ? [res.room_id] : [];
+                    const isMulti = ids.length > 1;
                     return (
-                      <div key={res.id} className="flex items-center gap-3 p-3 rounded-xl bg-surface-800/60 border border-white/5">
-                        <div className={`w-1 h-10 rounded-full flex-shrink-0 ${ids.includes("smc-601") ? "bg-accent-400" : "bg-primary-400"}`} />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            {ids.map((id) => (
-                              <span key={id} className={`text-xs px-1.5 py-0.5 rounded font-medium ${
-                                id === "smc-601" ? "bg-accent-500/20 text-accent-300" : "bg-primary-500/20 text-primary-300"
+                      <div key={res.id} className="rounded-xl bg-surface-800/60 border border-white/5 overflow-hidden">
+                        {/* Title row */}
+                        <div className="px-3 pt-2.5 pb-1.5">
+                          <p className="text-sm font-medium text-white truncate">{res.title}</p>
+                        </div>
+                        {/* Room boxes */}
+                        <div className={`px-2.5 pb-2.5 ${isMulti ? "grid grid-cols-2 gap-1.5" : ""}`}>
+                          {ids.map((id) => (
+                            <div key={id} className={`rounded-lg px-2.5 py-1.5 flex items-center gap-2 ${id === "smc-601"
+                                ? "bg-accent-500/10 border border-accent-500/20"
+                                : "bg-primary-500/10 border border-primary-500/20"
                               }`}>
+                              <span className={`text-xs font-bold ${id === "smc-601" ? "text-accent-300" : "text-primary-300"}`}>
                                 {id === "smc-601" ? "601" : "605"}
                               </span>
-                            ))}
-                            <p className="text-sm font-medium text-white truncate">{res.title}</p>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-slate-400">
-                            <Clock size={10} />
-                            {res.start_time.slice(0, 5)} - {res.end_time.slice(0, 5)} น.
-                          </div>
+                              <div className="flex items-center gap-1 text-xs text-slate-400">
+                                <Clock size={9} />
+                                {res.start_time.slice(0, 5)} – {res.end_time.slice(0, 5)}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     );
@@ -285,7 +288,7 @@ export default function HomePage() {
                         relative aspect-square flex flex-col items-center justify-center rounded-xl text-sm font-medium transition-all
                         ${isSelected ? "bg-primary-600 text-white shadow-glow scale-105"
                           : isCurrentDay ? "border-2 border-accent-500/60 text-accent-300 hover:bg-white/5"
-                          : "text-slate-300 hover:bg-white/5 hover:text-white"}
+                            : "text-slate-300 hover:bg-white/5 hover:text-white"}
                       `}
                     >
                       <span>{format(day, "d")}</span>
@@ -313,7 +316,7 @@ export default function HomePage() {
       </section>
 
       <footer className="border-t border-white/5 py-6 text-center text-sm text-slate-500">
-        <p>© 2024 SMC Room Booking System · พัฒนาด้วย ❤️ สำหรับ SMC</p>
+        <p>SMC Room Booking System</p>
       </footer>
     </div>
   );
