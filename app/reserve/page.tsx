@@ -40,11 +40,10 @@ const emptyRoomTime = (): RoomTime => ({ start: "", end: "", tapStart: null });
 function StepIndicator({ step, current }: { step: number; current: number }) {
   const done = current > step;
   return (
-    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${
-      done ? "bg-primary-600 border-primary-500 text-white" :
-      current === step ? "border-primary-400 text-primary-300 bg-primary-900/40" :
-      "border-slate-700 text-slate-600"
-    }`}>
+    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${done ? "bg-primary-600 border-primary-500 text-white" :
+        current === step ? "border-primary-400 text-primary-300 bg-primary-900/40" :
+          "border-slate-700 text-slate-600"
+      }`}>
       {done ? <CheckCircle size={16} /> : step}
     </div>
   );
@@ -67,7 +66,7 @@ function RoomSlotGrid({
     const inRange = roomTime.start && roomTime.end && slot >= roomTime.start && slotEnd <= roomTime.end;
     const isPending = roomTime.tapStart === slot;
     if (isPending) return "bg-amber-500/30 border-amber-400/50 text-amber-200 scale-105 shadow-lg";
-    if (inRange)   return "bg-primary-600/50 border-primary-400/60 text-white scale-[1.02]";
+    if (inRange) return "bg-primary-600/50 border-primary-400/60 text-white scale-[1.02]";
     return "bg-emerald-900/20 border-emerald-700/30 text-emerald-400 hover:bg-emerald-700/30 hover:scale-105 cursor-pointer";
   };
 
@@ -82,8 +81,8 @@ function RoomSlotGrid({
         {!roomTime.tapStart && !roomTime.start
           ? "แตะช่องเวลาแรก เพื่อเลือกเวลาเริ่ม"
           : roomTime.tapStart
-          ? `เลือก ${roomTime.tapStart} น. แล้ว — แตะช่องสิ้นสุดที่ต้องการ`
-          : `เลือกแล้ว: ${roomTime.start} – ${roomTime.end} น.`}
+            ? `เลือก ${roomTime.tapStart} น. แล้ว — แตะช่องสิ้นสุดที่ต้องการ`
+            : `เลือกแล้ว: ${roomTime.start} – ${roomTime.end} น.`}
       </div>
 
       {/* Morning */}
@@ -122,7 +121,7 @@ function RoomSlotGrid({
           {reservations.map((r) => (
             <div key={r.id} className="flex items-center gap-2 text-xs bg-red-900/10 border border-red-800/20 rounded-lg px-3 py-2">
               <Clock size={11} className="text-red-400 flex-shrink-0" />
-              <span className="text-red-300 font-medium">{r.start_time.slice(0,5)} – {r.end_time.slice(0,5)} น.</span>
+              <span className="text-red-300 font-medium">{r.start_time.slice(0, 5)} – {r.end_time.slice(0, 5)} น.</span>
               <span className="text-slate-500 truncate">{r.title}</span>
             </div>
           ))}
@@ -285,23 +284,27 @@ function ReserveContent() {
     if (!instructorName.trim()) return toast.error("กรุณากรอกชื่อผู้สอน");
 
     setSubmitting(true);
-    // If all selected rooms have same time, submit as one; otherwise submit one per room
-    // Simple approach: one reservation per room group (same time) or just one combined
-    const { error } = await supabase.from("reservations").insert({
+
+    const desc = [
+      department ? `สาขา: ${department}` : "",
+      phoneInternal ? `เบอร์ภายใน: ${phoneInternal}` : "",
+      description ? `หมายเหตุ: ${description}` : "",
+    ].filter(Boolean).join(" | ") || null;
+
+    // Insert one record per room so each keeps its own start/end time
+    const rows = confirmedRooms.map((roomId) => ({
       user_id: user.id,
-      room_ids: confirmedRooms,
+      room_ids: [roomId],
       date: format(selectedDate, "yyyy-MM-dd"),
-      start_time: roomTimes[confirmedRooms[0]].start,
-      end_time: roomTimes[confirmedRooms[0]].end,
+      start_time: roomTimes[roomId].start,
+      end_time: roomTimes[roomId].end,
       title: instructorName.trim(),
-      description: [
-        department ? `สาขา: ${department}` : "",
-        phoneInternal ? `เบอร์ภายใน: ${phoneInternal}` : "",
-        description ? `หมายเหตุ: ${description}` : "",
-      ].filter(Boolean).join(" | ") || null,
+      description: desc,
       equipment: selectedEquipment,
       status: "confirmed",
-    });
+    }));
+
+    const { error } = await supabase.from("reservations").insert(rows);
 
     if (error) toast.error("เกิดข้อผิดพลาด: " + error.message);
     else { toast.success("จองห้องสำเร็จ! 🎉"); router.push("/my-reservations"); }
@@ -340,9 +343,8 @@ function ReserveContent() {
           ].map(({ n, label }, i, arr) => (
             <div key={n} className="flex items-center gap-2 flex-shrink-0">
               <StepIndicator step={n} current={step} />
-              <span className={`text-sm font-medium whitespace-nowrap ${
-                step === n ? "text-primary-300" : step > n ? "text-slate-400" : "text-slate-600"
-              }`}>{label}</span>
+              <span className={`text-sm font-medium whitespace-nowrap ${step === n ? "text-primary-300" : step > n ? "text-slate-400" : "text-slate-600"
+                }`}>{label}</span>
               {i < arr.length - 1 && <div className={`w-8 h-px mx-1 ${step > n ? "bg-primary-600" : "bg-slate-700"}`} />}
             </div>
           ))}
@@ -360,7 +362,7 @@ function ReserveContent() {
                 {format(currentMonth, "MMMM yyyy", { locale: th })}
               </span>
               <div className="flex items-center gap-2">
-                <button type="button" onClick={() => { const p = new Date(currentMonth); p.setMonth(p.getMonth()-1); setCurrentMonth(p); }}
+                <button type="button" onClick={() => { const p = new Date(currentMonth); p.setMonth(p.getMonth() - 1); setCurrentMonth(p); }}
                   className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-all">
                   <ChevronLeft size={18} />
                 </button>
@@ -368,7 +370,7 @@ function ReserveContent() {
                   className="px-3 py-1.5 rounded-lg text-xs font-medium glass-light text-slate-300 hover:text-white transition-all">
                   วันนี้
                 </button>
-                <button type="button" onClick={() => { const n = new Date(currentMonth); n.setMonth(n.getMonth()+1); setCurrentMonth(n); }}
+                <button type="button" onClick={() => { const n = new Date(currentMonth); n.setMonth(n.getMonth() + 1); setCurrentMonth(n); }}
                   className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-all">
                   <ChevronRight size={18} />
                 </button>
@@ -394,7 +396,7 @@ function ReserveContent() {
                     className={`relative aspect-square flex flex-col items-center justify-center rounded-xl text-sm font-medium transition-all disabled:opacity-25 disabled:cursor-not-allowed
                       ${isSelected ? "bg-primary-600 text-white shadow-glow scale-105"
                         : isCurrentDay ? "border-2 border-accent-500/60 text-accent-300 hover:bg-white/5"
-                        : "text-slate-300 hover:bg-white/5 hover:text-white"}`}>
+                          : "text-slate-300 hover:bg-white/5 hover:text-white"}`}>
                     <span>{format(day, "d")}</span>
                     {(has601 || has605) && (
                       <div className="flex gap-0.5 mt-0.5">
@@ -449,18 +451,16 @@ function ReserveContent() {
               const roomRes = getRoomReservations(room.id);
 
               return (
-                <div key={room.id} className={`glass rounded-2xl border-2 transition-all overflow-hidden ${
-                  isConfirmed ? "border-primary-500" : isExpanded ? "border-primary-700/50" : "border-white/10"
-                }`}>
+                <div key={room.id} className={`glass rounded-2xl border-2 transition-all overflow-hidden ${isConfirmed ? "border-primary-500" : isExpanded ? "border-primary-700/50" : "border-white/10"
+                  }`}>
                   {/* Room header — always visible, click to expand */}
                   <button type="button" onClick={() => toggleExpand(room.id)}
                     className="w-full flex items-center justify-between p-5 text-left hover:bg-white/[0.02] transition-all">
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-display font-bold text-lg flex-shrink-0 ${
-                        room.id === "smc-601"
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-display font-bold text-lg flex-shrink-0 ${room.id === "smc-601"
                           ? "bg-accent-500/20 text-accent-300 border border-accent-500/30"
                           : "bg-primary-500/20 text-primary-300 border border-primary-500/30"
-                      }`}>
+                        }`}>
                         {room.id === "smc-601" ? "601" : "605"}
                       </div>
                       <div>
@@ -536,12 +536,10 @@ function ReserveContent() {
                 const IconComp = ICON_MAP[eq.iconName];
                 return (
                   <button key={eq.id} type="button" onClick={() => toggleEquipment(eq.id)}
-                    className={`flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all ${
-                      active ? "border-primary-500 bg-primary-600/20" : "border-white/10 hover:border-primary-600/30 hover:bg-primary-900/10"
-                    }`}>
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${
-                      active ? "bg-primary-600 text-white" : "bg-white/10 text-slate-400"
-                    }`}>
+                    className={`flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all ${active ? "border-primary-500 bg-primary-600/20" : "border-white/10 hover:border-primary-600/30 hover:bg-primary-900/10"
+                      }`}>
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${active ? "bg-primary-600 text-white" : "bg-white/10 text-slate-400"
+                      }`}>
                       {IconComp && <IconComp size={22} />}
                     </div>
                     <span className={`text-sm font-medium text-center leading-tight ${active ? "text-primary-300" : "text-slate-400"}`}>
