@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { format, isBefore } from "date-fns";
 import { th } from "date-fns/locale";
 import { Reservation, EQUIPMENT_OPTIONS } from "@/types";
-import { Calendar, Clock, Building2, Trash2, Plus } from "lucide-react";
+import { Calendar, Clock, Trash2, Plus } from "lucide-react";
 import Link from "next/link";
 
 type FilterType = "all" | "upcoming" | "past" | "cancelled";
@@ -122,16 +122,14 @@ export default function MyReservationsPage() {
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
-                    filter === f
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${filter === f
                       ? "bg-primary-600 text-white"
                       : "glass-light text-slate-400 hover:text-white border border-white/5"
-                  }`}
+                    }`}
                 >
                   {labels[f]}
-                  <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-                    filter === f ? "bg-white/20" : "bg-white/10"
-                  }`}>
+                  <span className={`px-1.5 py-0.5 rounded-full text-xs ${filter === f ? "bg-white/20" : "bg-white/10"
+                    }`}>
                     {filterCounts[f]}
                   </span>
                 </button>
@@ -162,95 +160,51 @@ export default function MyReservationsPage() {
               </Link>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {filteredReservations.map((res) => {
                 const isPast = isBefore(new Date(res.date + "T" + res.end_time), new Date());
                 const isCancelled = res.status === "cancelled";
                 const isConfirm = confirmDelete === res.id;
                 const roomIds = getRoomIds(res);
+                const isMultiRoom = roomIds.length > 1;
 
                 return (
                   <div
                     key={res.id}
-                    className={`glass rounded-2xl p-5 border transition-all ${
-                      isCancelled
+                    className={`glass rounded-2xl border transition-all ${isCancelled
                         ? "border-red-700/20 opacity-60"
                         : isPast
-                        ? "border-slate-700/30"
-                        : "border-primary-700/20 hover:border-primary-500/30"
-                    }`}
+                          ? "border-slate-700/30"
+                          : "border-primary-700/20 hover:border-primary-500/30"
+                      }`}
                   >
-                    <div className="flex items-start gap-4">
-
-                      {/* Room badge(s) */}
-                      <div className="flex flex-col gap-1 flex-shrink-0">
-                        {roomIds.map((rid) => (
-                          <div
-                            key={rid}
-                            className={`w-12 h-10 rounded-xl flex items-center justify-center font-display font-bold text-xs ${
-                              rid === "smc-601"
-                                ? "bg-accent-500/20 text-accent-300 border border-accent-500/30"
-                                : "bg-primary-500/20 text-primary-300 border border-primary-500/30"
-                            }`}
-                          >
-                            {rid === "smc-601" ? "601" : "605"}
-                          </div>
-                        ))}
-                      </div>
-
+                    {/* ── Group header: date, title, status, delete ── */}
+                    <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3">
                       <div className="flex-1 min-w-0">
-                        {/* Title + status */}
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="font-display font-semibold text-white text-base truncate">
-                            {res.title}
-                          </h3>
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
-                            isCancelled
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${isCancelled
                               ? "status-busy"
                               : isPast
-                              ? "bg-slate-700/50 text-slate-400 border border-slate-600/30"
-                              : "status-available"
-                          }`}>
+                                ? "bg-slate-700/50 text-slate-400 border border-slate-600/30"
+                                : "status-available"
+                            }`}>
                             {isCancelled ? "ยกเลิก" : isPast ? "ผ่านไปแล้ว" : "ยืนยันแล้ว"}
                           </span>
+                          {isMultiRoom && (
+                            <span className="px-2 py-0.5 rounded-full text-xs bg-primary-900/40 text-primary-300 border border-primary-700/30">
+                              จอง {roomIds.length} ห้อง
+                            </span>
+                          )}
                         </div>
-
-                        {/* Meta info */}
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
+                        <h3 className="font-display font-semibold text-white text-base truncate">
+                          {res.title}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400 mt-1">
                           <span className="flex items-center gap-1.5">
                             <Calendar size={13} />
                             {format(new Date(res.date + "T00:00:00"), "EEEE d MMMM yyyy", { locale: th })}
                           </span>
-                          <span className="flex items-center gap-1.5">
-                            <Clock size={13} />
-                            {res.start_time.slice(0, 5)} - {res.end_time.slice(0, 5)} น.
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Building2 size={13} />
-                            {getRoomNames(res)}
-                          </span>
                         </div>
-
-                        {/* Equipment tags */}
-                        {res.equipment && res.equipment.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {res.equipment.map((eq) => {
-                              const opt = EQUIPMENT_OPTIONS.find((e) => e.id === eq);
-                              return opt ? (
-                                <span
-                                  key={eq}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-primary-900/40 text-primary-300 border border-primary-700/30"
-                                >
-                                  {opt.label}
-                                </span>
-                              ) : null;
-                            })}
-                          </div>
-                        )}
-
-                        {res.description && (
-                          <p className="text-sm text-slate-500 mt-1.5 line-clamp-1">{res.description}</p>
-                        )}
                       </div>
 
                       {/* Delete button */}
@@ -285,9 +239,62 @@ export default function MyReservationsPage() {
                       )}
                     </div>
 
-                    <p className="text-xs text-slate-600 mt-3">
-                      จองเมื่อ {format(new Date(res.created_at), "d MMM yyyy HH:mm", { locale: th })}
-                    </p>
+                    {/* ── Room boxes ── */}
+                    <div className={`px-5 pb-4 ${isMultiRoom ? "grid grid-cols-1 sm:grid-cols-2 gap-3" : ""}`}>
+                      {roomIds.map((rid) => (
+                        <div
+                          key={rid}
+                          className={`rounded-xl p-3.5 border flex items-start gap-3 ${rid === "smc-601"
+                              ? "bg-accent-500/8 border-accent-500/20"
+                              : "bg-primary-500/8 border-primary-500/20"
+                            }`}
+                        >
+                          {/* Room badge */}
+                          <div className={`w-11 h-10 rounded-lg flex items-center justify-center font-display font-bold text-sm flex-shrink-0 ${rid === "smc-601"
+                              ? "bg-accent-500/20 text-accent-300 border border-accent-500/30"
+                              : "bg-primary-500/20 text-primary-300 border border-primary-500/30"
+                            }`}>
+                            {rid === "smc-601" ? "601" : "605"}
+                          </div>
+
+                          {/* Room details */}
+                          <div className="flex-1 min-w-0">
+                            <p className={`font-semibold text-sm ${rid === "smc-601" ? "text-accent-300" : "text-primary-300"}`}>
+                              {rid === "smc-601" ? "SMC 601" : "SMC 605"}
+                            </p>
+                            <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
+                              <Clock size={11} />
+                              {res.start_time.slice(0, 5)} – {res.end_time.slice(0, 5)} น.
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* ── Equipment + description + footer ── */}
+                    <div className="px-5 pb-4 space-y-2 border-t border-white/5 pt-3">
+                      {res.equipment && res.equipment.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {res.equipment.map((eq) => {
+                            const opt = EQUIPMENT_OPTIONS.find((e) => e.id === eq);
+                            return opt ? (
+                              <span
+                                key={eq}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-primary-900/40 text-primary-300 border border-primary-700/30"
+                              >
+                                {opt.label}
+                              </span>
+                            ) : null;
+                          })}
+                        </div>
+                      )}
+                      {res.description && (
+                        <p className="text-xs text-slate-500 line-clamp-1">{res.description}</p>
+                      )}
+                      <p className="text-xs text-slate-600">
+                        จองเมื่อ {format(new Date(res.created_at), "d MMM yyyy HH:mm", { locale: th })}
+                      </p>
+                    </div>
                   </div>
                 );
               })}
