@@ -65,10 +65,7 @@ function LoginContent() {
       toast.error(error.message === "Invalid login credentials" ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง" : error.message);
     } else {
       toast.success("เข้าสู่ระบบสำเร็จ!");
-      router.refresh();
-      // Small delay lets the session cookie propagate before the middleware checks auth
-      await new Promise((res) => setTimeout(res, 100));
-      router.push(redirect);
+      window.location.href = redirect;
     }
     setLoading(false);
   };
