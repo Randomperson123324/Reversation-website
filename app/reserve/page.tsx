@@ -64,10 +64,9 @@ function RoomSlotGrid({
     if (booked) return "bg-red-900/20 border-red-700/30 text-red-400 cursor-not-allowed opacity-60";
     const inRange = roomTime.start && roomTime.end && slot >= roomTime.start && slot < roomTime.end;
     const isPending = roomTime.tapStart === slot;
-    const isEndOnly = slot === "18:00" && !roomTime.tapStart;
     if (isPending) return "bg-amber-500/30 border-amber-400/50 text-amber-200 scale-105 shadow-lg";
     if (inRange) return "bg-primary-600/50 border-primary-400/60 text-white scale-[1.02]";
-    if (isEndOnly) return "bg-white/5 border-white/10 text-slate-600 cursor-not-allowed";
+    if (slot === "18:00" && !roomTime.tapStart) return "bg-white/5 border-white/10 text-slate-500 cursor-not-allowed";
     return "bg-emerald-900/20 border-emerald-700/30 text-emerald-400 hover:bg-emerald-700/30 hover:scale-105 cursor-pointer";
   };
 
@@ -77,13 +76,13 @@ function RoomSlotGrid({
       <div className="text-xs text-primary-300/80 bg-primary-900/20 border border-primary-700/20 rounded-lg px-3 py-2 flex items-center gap-2">
         <Clock size={12} />
         {!roomTime.tapStart && !roomTime.start
-          ? "แตะช่องเวลาแรก เพื่อเลือกเวลาเริ่ม"
+          ? "แตะเวลาเริ่มต้น"
           : roomTime.tapStart
-            ? `เลือก ${roomTime.tapStart} น. แล้ว — แตะช่องสิ้นสุดที่ต้องการ`
-            : `เลือกแล้ว: ${roomTime.start} – ${roomTime.end} น.`}
+            ? `เริ่ม ${roomTime.tapStart} น. — แตะเวลาสิ้นสุด`
+            : `${roomTime.start} – ${roomTime.end} น.`}
       </div>
 
-      {/* All slots — ALL_SLOTS are start slots; 18:00 shown as end-only */}
+      {/* Slots: 07:00–17:00 are start slots; 18:00 is end-only */}
       <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5">
         {ALL_SLOTS.map((slot) => (
           <button key={slot} type="button"
@@ -93,16 +92,6 @@ function RoomSlotGrid({
             {slot}
           </button>
         ))}
-        {/* 18:00 — selectable only as end time (second tap) */}
-        <button type="button"
-          disabled={!roomTime.tapStart}
-          onClick={() => roomTime.tapStart && onTap("18:00")}
-          className={`py-2.5 rounded-lg text-xs font-medium border transition-all select-none ${!roomTime.tapStart
-              ? "bg-white/5 border-white/10 text-slate-600 cursor-not-allowed"
-              : "bg-emerald-900/20 border-emerald-700/30 text-emerald-400 hover:bg-emerald-700/30 hover:scale-105 cursor-pointer"
-            }`}>
-          18:00
-        </button>
       </div>
 
       {/* Existing bookings */}
@@ -251,12 +240,12 @@ function ReserveContent() {
         return;
       }
       const s = rt.tapStart;
-      const e = slot; // end is exactly the tapped slot
-
-      // Check no booked slot in range [s, e)
-      const sIdx = TIME_OPTIONS.indexOf(s);
+      const e = slot; // end time is exactly the tapped slot
       const eIdx = TIME_OPTIONS.indexOf(e);
-      const range = TIME_OPTIONS.slice(sIdx, eIdx); // slots that get occupied
+
+      // Check no booked slot in range [s, e) — slots the booking occupies
+      const sIdx = TIME_OPTIONS.indexOf(s);
+      const range = TIME_OPTIONS.slice(sIdx, eIdx);
       if (range.some((sl) => isSlotBooked(roomId, sl))) {
         toast.error("มีการจองในช่วงเวลาที่เลือก กรุณาเลือกใหม่");
         setRoomTimes((prev) => ({ ...prev, [roomId]: emptyRoomTime() }));
