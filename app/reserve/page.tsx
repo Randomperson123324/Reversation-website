@@ -124,11 +124,20 @@ function ReserveContent() {
 
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(() => {
+    const s = searchParams.get("step");
+    return s === "2" ? 2 : 1;
+  });
 
   // Step 1
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(() => {
+    const d = searchParams.get("date");
+    return d ? new Date(d + "T00:00:00") : new Date();
+  });
+  const [currentMonth, setCurrentMonth] = useState<Date>(() => {
+    const d = searchParams.get("date");
+    return d ? new Date(d + "T00:00:00") : new Date();
+  });
   const [monthReservations, setMonthReservations] = useState<Reservation[]>([]);
 
   // Step 2 — per-room selection

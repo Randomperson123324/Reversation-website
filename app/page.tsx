@@ -214,8 +214,8 @@ export default function HomePage() {
                         <div className={`px-2.5 pb-2.5 ${isMulti ? "grid grid-cols-2 gap-1.5" : ""}`}>
                           {ids.map((id) => (
                             <div key={id} className={`rounded-lg px-2.5 py-1.5 flex items-center gap-2 ${id === "smc-601"
-                                ? "bg-accent-500/10 border border-accent-500/20"
-                                : "bg-primary-500/10 border border-primary-500/20"
+                              ? "bg-accent-500/10 border border-accent-500/20"
+                              : "bg-primary-500/10 border border-primary-500/20"
                               }`}>
                               <span className={`text-xs font-bold ${id === "smc-601" ? "text-accent-300" : "text-primary-300"}`}>
                                 {id === "smc-601" ? "601" : "605"}
@@ -286,7 +286,7 @@ export default function HomePage() {
                     <button
                       key={day.toString()}
                       onClick={() => setSelectedDate(day)}
-                      onDoubleClick={() => router.push(`/reserve?date=${format(day, "yyyy-MM-dd")}`)}
+                      onDoubleClick={() => router.push(`/reserve?date=${format(day, "yyyy-MM-dd")}&step=2`)}
                       className={`
                         relative aspect-square flex flex-col items-center justify-center rounded-xl text-sm font-medium transition-all
                         ${isSelected ? "bg-primary-600 text-white shadow-glow scale-105"
