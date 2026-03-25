@@ -242,12 +242,12 @@ export default function AllReservationsPage() {
                               {res.start_time.slice(0, 5)} – {res.end_time.slice(0, 5)} น.
                             </div>
                             {res.department && (
-                              <div className="text-lg text-slate-400 mt-1">
+                              <div className="text-lg text-yellow-400 mt-1">
                                 สาขา: {res.department}
                               </div>
                             )}
                             {res.description && (
-                              <p className="text-lg text-slate-500 mt-1 line-clamp-2">{res.description}</p>
+                              <p className="text-lg text-yellow-500 mt-1 line-clamp-2">{res.description}</p>
                             )}
                           </div>
                         </div>
