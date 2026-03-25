@@ -29,6 +29,13 @@ export type Reservation = {
   created_at: string;
   user_email?: string;
   user_name?: string;
+  department?: string;
+  profiles?: {
+    department?: string;
+    full_name?: string;
+    email?: string;
+    avatar_url?: string;
+  };
 };
 
 export const TIME_OPTIONS = [
