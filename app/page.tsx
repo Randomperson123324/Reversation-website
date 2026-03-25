@@ -31,7 +31,7 @@ export default function HomePage() {
     const end = format(endOfMonth(currentMonth), "yyyy-MM-dd");
     const { data } = await supabase
       .from("reservations")
-      .select("*")
+      .select("*, profiles(department)")
       .eq("status", "confirmed")
       .gte("date", start)
       .lte("date", end)
@@ -217,16 +217,28 @@ export default function HomePage() {
                         {/* Room boxes */}
                         <div className={`px-2.5 pb-2.5 ${isMulti ? "grid grid-cols-2 gap-1.5" : ""}`}>
                           {ids.map((id) => (
-                            <div key={id} className={`rounded-lg px-2.5 py-1.5 flex items-center gap-2 ${id === "smc-601"
+                            <div key={id} className={`rounded-lg px-2.5 py-2 flex flex-col items-start gap-1 ${id === "smc-601"
                               ? "bg-accent-500/10 border border-accent-500/20"
                               : "bg-primary-500/10 border border-primary-500/20"
                               }`}>
                               <span className={`text-xs font-bold ${id === "smc-601" ? "text-accent-300" : "text-primary-300"}`}>
                                 {id === "smc-601" ? "601" : "605"}
                               </span>
-                              <div className="flex items-center gap-1 text-xs text-slate-400">
-                                <Clock size={9} />
-                                {res.start_time.slice(0, 5)} – {res.end_time.slice(0, 5)}
+                              <div className="flex w-full flex-col gap-1 mt-0.5">
+                                <div className="flex items-center gap-1 text-[11px] text-slate-400">
+                                  <Clock size={9} />
+                                  {res.start_time.slice(0, 5)} – {res.end_time.slice(0, 5)}
+                                </div>
+                                {res.profiles?.department && (
+                                  <div className="text-[10px] text-slate-400 leading-tight">
+                                    สาขา: {res.profiles.department}
+                                  </div>
+                                )}
+                                {res.description && (
+                                  <div className="text-[10px] text-slate-500 leading-tight line-clamp-2">
+                                    {res.description}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}

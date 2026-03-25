@@ -30,7 +30,7 @@ export default function AllReservationsPage() {
     setLoading(true);
     const { data } = await supabase
       .from("reservations")
-      .select("*, profiles(full_name, email, avatar_url)")
+      .select("*, profiles(full_name, email, avatar_url, department)")
       .order("date", { ascending: false })
       .order("start_time", { ascending: false });
     
@@ -39,7 +39,8 @@ export default function AllReservationsPage() {
       ...r,
       user_name: r.profiles?.full_name || r.profiles?.email || "Unknown User",
       user_email: r.profiles?.email || "",
-      avatar_url: r.profiles?.avatar_url || null
+      avatar_url: r.profiles?.avatar_url || null,
+      department: r.profiles?.department || null
     }));
     
     setReservations(formattedData as any[]);
@@ -240,6 +241,14 @@ export default function AllReservationsPage() {
                               <Clock size={11} />
                               {res.start_time.slice(0, 5)} – {res.end_time.slice(0, 5)} น.
                             </div>
+                            {res.department && (
+                              <div className="text-xs text-slate-400 mt-1">
+                                สาขา: {res.department}
+                              </div>
+                            )}
+                            {res.description && (
+                              <p className="text-xs text-slate-500 mt-1 line-clamp-2">{res.description}</p>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -260,9 +269,6 @@ export default function AllReservationsPage() {
                             ) : null;
                           })}
                         </div>
-                      )}
-                      {res.description && (
-                        <p className="text-xs text-slate-500 line-clamp-1">{res.description}</p>
                       )}
                       <p className="text-xs text-slate-600">
                         จองเมื่อ {format(new Date(res.created_at), "d MMM yyyy HH:mm", { locale: th })}

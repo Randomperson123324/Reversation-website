@@ -36,11 +36,17 @@ export default function MyReservationsPage() {
     if (!uid) return;
     const { data } = await supabase
       .from("reservations")
-      .select("*")
+      .select("*, profiles(department)")
       .eq("user_id", uid)
       .order("date", { ascending: false })
       .order("start_time", { ascending: false });
-    setReservations(data || []);
+    
+    const formattedData = (data || []).map(r => ({
+      ...r,
+      department: r.profiles?.department || null
+    }));
+    
+    setReservations(formattedData as any[]);
     setLoading(false);
   }, []);
 
@@ -257,7 +263,6 @@ export default function MyReservationsPage() {
                             {rid === "smc-601" ? "601" : "605"}
                           </div>
 
-                          {/* Room details */}
                           <div className="flex-1 min-w-0">
                             <p className={`font-semibold text-sm ${rid === "smc-601" ? "text-accent-300" : "text-primary-300"}`}>
                               {rid === "smc-601" ? "SMC 601" : "SMC 605"}
@@ -266,6 +271,14 @@ export default function MyReservationsPage() {
                               <Clock size={11} />
                               {res.start_time.slice(0, 5)} – {res.end_time.slice(0, 5)} น.
                             </div>
+                            {(res as any).department && (
+                              <div className="text-xs text-slate-400 mt-1">
+                                สาขา: {(res as any).department}
+                              </div>
+                            )}
+                            {res.description && (
+                              <p className="text-xs text-slate-500 mt-1 line-clamp-2">{res.description}</p>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -287,9 +300,6 @@ export default function MyReservationsPage() {
                             ) : null;
                           })}
                         </div>
-                      )}
-                      {res.description && (
-                        <p className="text-xs text-slate-500 line-clamp-1">{res.description}</p>
                       )}
                       <p className="text-xs text-slate-600">
                         จองเมื่อ {format(new Date(res.created_at), "d MMM yyyy HH:mm", { locale: th })}
