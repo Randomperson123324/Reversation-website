@@ -205,10 +205,8 @@ function ReserveContent() {
     allDayReservations.filter((r) => (r.room_ids || [r.room_id]).includes(roomId));
 
   const isSlotBooked = (roomId: string, slot: string) => {
-    const idx = TIME_OPTIONS.indexOf(slot);
-    const slotEnd = idx >= 0 && idx < TIME_OPTIONS.length - 1 ? TIME_OPTIONS[idx + 1] : "19:00";
     return getRoomReservations(roomId).some(
-      (r) => !(slotEnd <= r.start_time.slice(0, 5) || slot >= r.end_time.slice(0, 5))
+      (r) => slot >= r.start_time.slice(0, 5) && slot <= r.end_time.slice(0, 5)
     );
   };
 
