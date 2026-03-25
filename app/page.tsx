@@ -97,7 +97,7 @@ export default function HomePage() {
             <p className="text-slate-300 text-lg sm:text-xl max-w-2xl mx-auto mb-10 animate-fade-up delay-200">
               จองห้องประชุม SMC 601 และ SMC 605 ได้อย่างสะดวก รวดเร็ว และง่ายดาย
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-up delay-300">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center animate-fade-up delay-300">
               <Link href="/reserve" className="group flex items-center justify-center gap-3 px-8 py-4 rounded-xl btn-accent font-display font-semibold text-lg shadow-glow-accent">
                 <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
                 จองห้องประชุม
@@ -105,6 +105,10 @@ export default function HomePage() {
               <Link href="/my-reservations" className="group flex items-center justify-center gap-3 px-8 py-4 rounded-xl glass border border-primary-500/30 text-white font-display font-semibold text-lg hover:bg-primary-600/20 hover:border-primary-400/50 transition-all">
                 <Calendar size={20} />
                 การจองของฉัน
+              </Link>
+              <Link href="/all-reservations" className="group flex items-center justify-center gap-3 px-8 py-4 rounded-xl glass border border-primary-500/30 text-white font-display font-semibold text-lg hover:bg-primary-600/20 hover:border-primary-400/50 transition-all">
+                <Calendar size={20} />
+                การจองทั้งหมด
               </Link>
               <Link href="/statistics" className="group flex items-center justify-center gap-3 px-8 py-4 rounded-xl glass border border-slate-600/30 text-slate-300 font-display font-semibold text-lg hover:bg-white/5 hover:text-white transition-all">
                 <BarChart3 size={20} />

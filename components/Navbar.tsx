@@ -39,6 +39,7 @@ export default function Navbar() {
   const navLinks = [
     { href: "/reserve", label: "จองห้อง", icon: Plus },
     { href: "/my-reservations", label: "การจองของฉัน", icon: Calendar },
+    { href: "/all-reservations", label: "การจองทั้งหมด", icon: Calendar },
     { href: "/statistics", label: "สถิติการจอง", icon: BarChart3 },
   ];
 
