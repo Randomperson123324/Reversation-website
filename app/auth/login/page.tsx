@@ -113,8 +113,14 @@ function LoginContent() {
       <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex justify-center">
-            <Image src="/header-logo.png" alt="SMC Logo" width={220} height={60} className="object-contain" />
+          <Link href="/" className="inline-flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden shadow-glow">
+              <Image src="/icon-logo.png" alt="SMC Logo" width={48} height={48} className="w-full h-full object-cover" />
+            </div>
+            <div className="text-left">
+              <p className="font-display font-bold text-xl text-white">SMC Booking</p>
+              <p className="text-xs text-slate-400">ระบบจองห้องประชุม</p>
+            </div>
           </Link>
         </div>
 
