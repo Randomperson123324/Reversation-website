@@ -247,7 +247,7 @@ export default function AllReservationsPage() {
                               </div>
                             )}
                             {res.description && (
-                              <p className="text-xs text-slate-500 mt-1 line-clamp-2">{res.description}</p>
+                              <p className="text-lg text-slate-500 mt-1 line-clamp-2">{res.description}</p>
                             )}
                           </div>
                         </div>
