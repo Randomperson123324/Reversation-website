@@ -40,7 +40,7 @@ export default function AllReservationsPage() {
       user_name: r.profiles?.full_name || r.profiles?.email || "Unknown User",
       user_email: r.profiles?.email || "",
       avatar_url: r.profiles?.avatar_url || null,
-      department: r.profiles?.department || null
+      department: r.department || r.profiles?.department || null
     }));
 
     setReservations(formattedData as any[]);
@@ -243,9 +243,6 @@ export default function AllReservationsPage() {
                             <p className={`font-semibold text-sm ${rid === "smc-601" ? "text-accent-300" : "text-primary-300"}`}>
                               {rid === "smc-601" ? "SMC 601" : "SMC 605"}
                             </p>
-                            {res.description && (
-                              <p className="text-sm text-slate-300 mt-1.5 mb-1.5 line-clamp-2">{res.description}</p>
-                            )}
                             <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
                               <Clock size={11} />
                               {res.start_time.slice(0, 5)} – {res.end_time.slice(0, 5)} น.
@@ -270,6 +267,9 @@ export default function AllReservationsPage() {
                             ) : null;
                           })}
                         </div>
+                      )}
+                      {res.description && (
+                        <p className="text-sm text-slate-300 py-1">{res.description}</p>
                       )}
                       <p className="text-xs text-slate-600">
                         จองเมื่อ {format(new Date(res.created_at), "d MMM yyyy HH:mm", { locale: th })}
