@@ -337,7 +337,7 @@ export default function HomePage() {
 
       <footer className="border-t border-white/5 py-8 flex flex-col items-center justify-center gap-4">
         <Image src="/footer-logo.png" alt="SMC Footer Logo" width={180} height={60} className="object-contain opacity-70" />
-        <p className="text-sm text-slate-500 text-center">text i will edit later</p>
+        <p className="text-sm text-slate-500 text-center">หน่วยเทคโนโลยีการศึกษา 1151</p>
       </footer>
     </div>
   );
