@@ -301,7 +301,7 @@ function ReserveContent() {
     const { error } = await supabase.from("reservations").insert(rows);
 
     if (error) toast.error("เกิดข้อผิดพลาด: " + error.message);
-    else { toast.success("จองห้องสำเร็จ! 🎉"); router.push("/my-reservations"); }
+    else { toast.success("จองห้องสำเร็จ"); router.push("/my-reservations"); }
     setSubmitting(false);
   };
 
