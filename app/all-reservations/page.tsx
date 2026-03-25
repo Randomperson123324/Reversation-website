@@ -33,7 +33,7 @@ export default function AllReservationsPage() {
       .select("*, profiles(full_name, email, avatar_url, department)")
       .order("date", { ascending: false })
       .order("start_time", { ascending: false });
-    
+
     // Type assertion correctly passing the populated user data
     const formattedData = (data || []).map(r => ({
       ...r,
@@ -42,7 +42,7 @@ export default function AllReservationsPage() {
       avatar_url: r.profiles?.avatar_url || null,
       department: r.profiles?.department || null
     }));
-    
+
     setReservations(formattedData as any[]);
     setLoading(false);
   }, [supabase]);
@@ -53,10 +53,10 @@ export default function AllReservationsPage() {
     if (filter === "upcoming") matchFilter = r.status === "confirmed" && !isPast;
     if (filter === "past") matchFilter = r.status === "confirmed" && isPast;
     if (filter === "cancelled") matchFilter = r.status === "cancelled";
-    
+
     const matchSearch = r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (r.user_name || "").toLowerCase().includes(searchQuery.toLowerCase());
-      
+
     return matchFilter && matchSearch;
   });
 
@@ -107,7 +107,7 @@ export default function AllReservationsPage() {
                 />
               </div>
             </div>
-            
+
             <div className="flex flex-wrap gap-2">
               {(["upcoming", "past", "all", "cancelled"] as FilterType[]).map((f) => {
                 const labels: Record<FilterType, string> = {
@@ -121,8 +121,8 @@ export default function AllReservationsPage() {
                     key={f}
                     onClick={() => setFilter(f)}
                     className={`px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${filter === f
-                        ? "bg-primary-600 text-white"
-                        : "glass-light text-slate-400 hover:text-white border border-white/5"
+                      ? "bg-primary-600 text-white"
+                      : "glass-light text-slate-400 hover:text-white border border-white/5"
                       }`}
                   >
                     {labels[f]}
@@ -161,20 +161,20 @@ export default function AllReservationsPage() {
                   <div
                     key={res.id}
                     className={`glass rounded-2xl border transition-all ${isCancelled
-                        ? "border-red-700/20 opacity-60"
-                        : isPast
-                          ? "border-slate-700/30"
-                          : "border-primary-700/20 hover:border-primary-500/30"
+                      ? "border-red-700/20 opacity-60"
+                      : isPast
+                        ? "border-slate-700/30"
+                        : "border-primary-700/20 hover:border-primary-500/30"
                       }`}
                   >
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-3 px-5 pt-5 pb-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${isCancelled
-                              ? "status-busy"
-                              : isPast
-                                ? "bg-slate-700/50 text-slate-400 border border-slate-600/30"
-                                : "status-available"
+                            ? "status-busy"
+                            : isPast
+                              ? "bg-slate-700/50 text-slate-400 border border-slate-600/30"
+                              : "status-available"
                             }`}>
                             {isCancelled ? "ยกเลิก" : isPast ? "ผ่านไปแล้ว" : "ยืนยันแล้ว"}
                           </span>
@@ -222,13 +222,13 @@ export default function AllReservationsPage() {
                         <div
                           key={rid}
                           className={`rounded-xl p-3.5 border flex items-start gap-3 ${rid === "smc-601"
-                              ? "bg-accent-500/8 border-accent-500/20"
-                              : "bg-primary-500/8 border-primary-500/20"
+                            ? "bg-accent-500/8 border-accent-500/20"
+                            : "bg-primary-500/8 border-primary-500/20"
                             }`}
                         >
                           <div className={`w-11 h-10 rounded-lg flex items-center justify-center font-display font-bold text-sm flex-shrink-0 ${rid === "smc-601"
-                              ? "bg-accent-500/20 text-accent-300 border border-accent-500/30"
-                              : "bg-primary-500/20 text-primary-300 border border-primary-500/30"
+                            ? "bg-accent-500/20 text-accent-300 border border-accent-500/30"
+                            : "bg-primary-500/20 text-primary-300 border border-primary-500/30"
                             }`}>
                             {rid === "smc-601" ? "601" : "605"}
                           </div>
@@ -242,7 +242,7 @@ export default function AllReservationsPage() {
                               {res.start_time.slice(0, 5)} – {res.end_time.slice(0, 5)} น.
                             </div>
                             {res.department && (
-                              <div className="text-xs text-slate-400 mt-1">
+                              <div className="text-lg text-slate-400 mt-1">
                                 สาขา: {res.department}
                               </div>
                             )}
