@@ -9,7 +9,7 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday
 import { th } from "date-fns/locale";
 import { Reservation } from "@/types";
 import Navbar from "@/components/Navbar";
-import { Plus, Calendar, BarChart3, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { Plus, Calendar, BarChart3, ChevronLeft, ChevronRight, Clock, UserRoundCheck } from "lucide-react";
 
 const WEEKDAYS = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 const ROOMS = [
@@ -103,7 +103,7 @@ export default function HomePage() {
                 จองห้องประชุม
               </Link>
               <Link href="/my-reservations" className="group flex items-center justify-center gap-3 px-8 py-4 rounded-xl glass border border-primary-500/30 text-white font-display font-semibold text-lg hover:bg-primary-600/20 hover:border-primary-400/50 transition-all">
-                <Calendar size={20} />
+                <UserRoundCheck size={20} />
                 การจองของฉัน
               </Link>
               <Link href="/all-reservations" className="group flex items-center justify-center gap-3 px-8 py-4 rounded-xl glass border border-primary-500/30 text-white font-display font-semibold text-lg hover:bg-primary-600/20 hover:border-primary-400/50 transition-all">
@@ -211,8 +211,14 @@ export default function HomePage() {
                     return (
                       <div key={res.id} className="rounded-xl bg-surface-800/60 border border-white/5 overflow-hidden">
                         {/* Title row */}
-                        <div className="px-3 pt-2.5 pb-1.5">
+                        <div className="px-3 pt-2.5 pb-1.5 flex flex-col gap-0.5">
                           <p className="text-sm font-medium text-white truncate">{res.title}</p>
+                          {res.department && (
+                            <p className="text-[11px] text-slate-400">สาขา: {res.department}</p>
+                          )}
+                          {res.internal_number && (
+                            <p className="text-[11px] text-slate-400">เบอร์ภายใน: {res.internal_number}</p>
+                          )}
                         </div>
                         {/* Room boxes */}
                         <div className={`px-2.5 pb-2.5 ${isMulti ? "grid grid-cols-2 gap-1.5" : ""}`}>
@@ -225,20 +231,15 @@ export default function HomePage() {
                                 {id === "smc-601" ? "601" : "605"}
                               </span>
                               <div className="flex w-full flex-col gap-1 mt-0.5">
+                                {res.description && (
+                                  <div className="text-[10px] text-slate-300 leading-tight line-clamp-2 mb-0.5">
+                                    {res.description}
+                                  </div>
+                                )}
                                 <div className="flex items-center gap-1 text-[11px] text-slate-400">
                                   <Clock size={9} />
                                   {res.start_time.slice(0, 5)} – {res.end_time.slice(0, 5)}
                                 </div>
-                                {res.profiles?.department && (
-                                  <div className="text-[10px] text-slate-400 leading-tight">
-                                    สาขา: {res.profiles.department}
-                                  </div>
-                                )}
-                                {res.description && (
-                                  <div className="text-[10px] text-slate-500 leading-tight line-clamp-2">
-                                    {res.description}
-                                  </div>
-                                )}
                               </div>
                             </div>
                           ))}

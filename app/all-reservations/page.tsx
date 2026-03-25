@@ -187,6 +187,12 @@ export default function AllReservationsPage() {
                         <h3 className="font-display font-semibold text-white text-base truncate">
                           {res.title}
                         </h3>
+                        {res.department && (
+                          <div className="text-sm text-slate-400 mt-1">สาขา: {res.department}</div>
+                        )}
+                        {res.internal_number && (
+                          <div className="text-sm text-slate-400 mt-1">เบอร์ภายใน: {res.internal_number}</div>
+                        )}
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400 mt-1">
                           <span className="flex items-center gap-1.5">
                             <Calendar size={13} />
@@ -237,18 +243,13 @@ export default function AllReservationsPage() {
                             <p className={`font-semibold text-sm ${rid === "smc-601" ? "text-accent-300" : "text-primary-300"}`}>
                               {rid === "smc-601" ? "SMC 601" : "SMC 605"}
                             </p>
+                            {res.description && (
+                              <p className="text-sm text-slate-300 mt-1.5 mb-1.5 line-clamp-2">{res.description}</p>
+                            )}
                             <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-0.5">
                               <Clock size={11} />
                               {res.start_time.slice(0, 5)} – {res.end_time.slice(0, 5)} น.
                             </div>
-                            {res.department && (
-                              <div className="text-lg text-yellow-400 mt-1">
-                                สาขา: {res.department}
-                              </div>
-                            )}
-                            {res.description && (
-                              <p className="text-lg text-yellow-500 mt-1 line-clamp-2">{res.description}</p>
-                            )}
                           </div>
                         </div>
                       ))}
