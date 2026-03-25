@@ -95,7 +95,7 @@ export default function HomePage() {
               <span className="gradient-text">ระบบจองห้อง SMC</span>
             </h1>
             <p className="text-slate-300 text-lg sm:text-xl max-w-2xl mx-auto mb-10 animate-fade-up delay-200">
-              จองห้องประชุม SMC 601 และ SMC 605 ได้อย่างสะดวก รวดเร็ว และง่ายดาย
+              สามารถจองห้องประชุม SMC 601 และ SMC 605 ได้ที่เว็บไซต์นี้
             </p>
             <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center animate-fade-up delay-300">
               <Link href="/reserve" className="group flex items-center justify-center gap-3 px-8 py-4 rounded-xl btn-accent font-display font-semibold text-lg shadow-glow-accent">
