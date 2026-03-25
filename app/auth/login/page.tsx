@@ -114,7 +114,7 @@ function LoginContent() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden shadow-glow">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center overflow-hidden">
               <Image src="/icon-logo.png" alt="SMC Logo" width={48} height={48} className="w-full h-full object-cover" />
             </div>
             <div className="text-left">
