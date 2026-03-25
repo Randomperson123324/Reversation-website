@@ -6,8 +6,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import { Mail, Lock, Eye, EyeOff, Building2, ArrowLeft } from "lucide-react";
+import Image from "next/image";
 
-type Mode = "login" | "register" | "forgot";
+type Mode = "login" | "register";
 
 // ─── Defined OUTSIDE LoginContent so it never remounts on re-render ───
 function InputField({
@@ -99,19 +100,7 @@ function LoginContent() {
     setLoading(false);
   };
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return toast.error("กรุณากรอกอีเมล");
-    setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    });
-    if (error) toast.error(error.message);
-    else toast.success("ส่งลิงก์รีเซ็ตรหัสผ่านแล้ว!");
-    setLoading(false);
-  };
-
-  const handleSubmit = mode === "login" ? handleEmailLogin : mode === "register" ? handleRegister : handleForgotPassword;
+  const handleSubmit = mode === "login" ? handleEmailLogin : handleRegister;
 
   return (
     <div className="min-h-screen bg-surface-950 flex items-center justify-center px-4 py-12 relative overflow-hidden">
@@ -124,22 +113,15 @@ function LoginContent() {
       <div className="relative z-10 w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl btn-primary flex items-center justify-center shadow-glow">
-              <Building2 size={22} />
-            </div>
-            <div className="text-left">
-              <p className="font-display font-bold text-xl text-white">SMC Booking</p>
-              <p className="text-xs text-slate-400">ระบบจองห้องประชุม</p>
-            </div>
+          <Link href="/" className="inline-flex justify-center">
+            <Image src="/header-logo.png" alt="SMC Logo" width={220} height={60} className="object-contain" />
           </Link>
         </div>
 
         <div className="glass rounded-2xl p-8 border border-primary-700/20 shadow-2xl">
 
           {/* Mode tabs */}
-          {mode !== "forgot" && (
-            <div className="flex rounded-lg overflow-hidden mb-6 border border-white/10">
+          <div className="flex rounded-lg overflow-hidden mb-6 border border-white/10">
               <button
                 type="button"
                 onClick={() => setMode("login")}
@@ -155,18 +137,8 @@ function LoginContent() {
                 สมัครสมาชิก
               </button>
             </div>
-          )}
 
-          {/* Forgot header */}
-          {mode === "forgot" && (
-            <div className="mb-6">
-              <button type="button" onClick={() => setMode("login")} className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-all">
-                <ArrowLeft size={14} /> กลับไปเข้าสู่ระบบ
-              </button>
-              <h2 className="font-display text-xl font-bold text-white mt-3">ลืมรหัสผ่าน?</h2>
-              <p className="text-sm text-slate-400 mt-1">กรอกอีเมลเพื่อรับลิงก์รีเซ็ตรหัสผ่าน</p>
-            </div>
-          )}
+
 
 
 
@@ -191,8 +163,7 @@ function LoginContent() {
               icon={Mail}
             />
 
-            {mode !== "forgot" && (
-              <div>
+            <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">รหัสผ่าน</label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
@@ -212,19 +183,8 @@ function LoginContent() {
                   </button>
                 </div>
               </div>
-            )}
 
-            {mode === "login" && (
-              <div className="text-right -mt-2">
-                <button
-                  type="button"
-                  onClick={() => setMode("forgot")}
-                  className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
-                >
-                  ลืมรหัสผ่าน?
-                </button>
-              </div>
-            )}
+
 
             <button
               type="submit"
@@ -236,7 +196,7 @@ function LoginContent() {
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   กำลังดำเนินการ...
                 </span>
-              ) : mode === "login" ? "เข้าสู่ระบบ" : mode === "register" ? "สมัครสมาชิก" : "ส่งลิงก์รีเซ็ต"}
+              ) : mode === "login" ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}
             </button>
           </form>
 
