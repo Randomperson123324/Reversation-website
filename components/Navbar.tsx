@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { Calendar, BarChart3, Plus, Menu, X, LogOut, LogIn, Building2 } from "lucide-react";
+import { Calendar, BarChart3, Plus, Menu, X, LogOut, LogIn, Building2, UserRoundCheck } from "lucide-react";
 import Image from "next/image";
 
 export default function Navbar() {
@@ -38,7 +38,7 @@ export default function Navbar() {
 
   const navLinks = [
     { href: "/reserve", label: "จองห้อง", icon: Plus },
-    { href: "/my-reservations", label: "การจองของฉัน", icon: Calendar },
+    { href: "/my-reservations", label: "การจองของฉัน", icon: UserRoundCheck },
     { href: "/all-reservations", label: "การจองทั้งหมด", icon: Calendar },
     { href: "/statistics", label: "สถิติการจอง", icon: BarChart3 },
   ];
