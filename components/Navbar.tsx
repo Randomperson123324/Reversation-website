@@ -45,9 +45,8 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? "glass border-b border-primary-700/20 shadow-lg" : "bg-transparent"
-      }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "glass border-b border-primary-700/20 shadow-lg" : "bg-transparent"
+        }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
@@ -67,11 +66,10 @@ export default function Navbar() {
               <Link
                 key={href}
                 href={href}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  pathname === href
-                    ? "bg-primary-600/20 text-primary-300 border border-primary-500/30"
-                    : "text-slate-400 hover:text-white hover:bg-white/5"
-                }`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${pathname === href
+                  ? "bg-primary-600/20 text-primary-300 border border-primary-500/30"
+                  : "text-slate-400 hover:text-white hover:bg-white/5"
+                  }`}
               >
                 <Icon size={15} />
                 {label}
@@ -138,11 +136,10 @@ export default function Navbar() {
               key={href}
               href={href}
               onClick={() => setMenuOpen(false)}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                pathname === href
-                  ? "bg-primary-600/20 text-primary-300"
-                  : "text-slate-400 hover:text-white hover:bg-white/5"
-              }`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${pathname === href
+                ? "bg-primary-600/20 text-primary-300"
+                : "text-slate-400 hover:text-white hover:bg-white/5"
+                }`}
             >
               <Icon size={16} />
               {label}

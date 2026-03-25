@@ -27,6 +27,7 @@ const DEPARTMENTS = [
   "สาขาวิชาการพยาบาลเด็ก",
   "สาขาวิชาการพยาบาลมารดา ทารก และการผดุงครรภ์",
   "สาขาวิชาการพยาบาลพื้นฐานและการบริหารพยาบาล",
+  "อื่นๆ",
 ];
 
 // All tappable slots — 07:00 to 18:00 (18:00 acts as end-only)
@@ -282,12 +283,6 @@ function ReserveContent() {
 
     setSubmitting(true);
 
-    const desc = [
-      department ? `สาขา: ${department}` : "",
-      phoneInternal ? `เบอร์ภายใน: ${phoneInternal}` : "",
-      description ? `หมายเหตุ: ${description}` : "",
-    ].filter(Boolean).join(" | ") || null;
-
     // Insert one record per room so each keeps its own start/end time
     const rows = confirmedRooms.map((roomId) => ({
       user_id: user.id,
@@ -296,7 +291,9 @@ function ReserveContent() {
       start_time: roomTimes[roomId].start,
       end_time: roomTimes[roomId].end,
       title: instructorName.trim(),
-      description: desc,
+      department: department || null,
+      internal_number: phoneInternal || null,
+      description: description || null,
       equipment: selectedEquipment,
       status: "confirmed",
     }));

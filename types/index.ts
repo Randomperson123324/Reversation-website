@@ -30,6 +30,7 @@ export type Reservation = {
   user_email?: string;
   user_name?: string;
   department?: string;
+  internal_number?: string;
   profiles?: {
     department?: string;
     full_name?: string;
