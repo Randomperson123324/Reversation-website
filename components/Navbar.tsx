@@ -53,8 +53,8 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 rounded-lg btn-primary flex items-center justify-center">
-              <Building2 size={16} />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden">
+              <Image src="/icon-logo.png" alt="SMC Logo" width={32} height={32} className="w-full h-full object-cover" />
             </div>
             <span className="font-display font-bold text-lg hidden sm:block">
               SMC <span className="text-primary-400">Booking</span>
