@@ -1,0 +1,320 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * ─── Design tokens ───────────────────────────────────────────────────────
+ * Every color used anywhere in the app resolves back to one of these
+ * variables (wired up in tailwind.config.ts). To re-theme the site —
+ * switch accent hue, go dark mode, adjust contrast — change values here
+ * only; no component file should ever contain a literal hex color.
+ * Values are stored as unitless "r g b" triplets so Tailwind's
+ * rgb(var(...) / <alpha-value>) opacity syntax works (e.g. bg-primary-600/10).
+ */
+:root {
+  /* Primary — red */
+  --color-primary-50-rgb: 254 242 242;
+  --color-primary-100-rgb: 254 226 226;
+  --color-primary-200-rgb: 254 202 202;
+  --color-primary-300-rgb: 252 165 165;
+  --color-primary-400-rgb: 248 113 113;
+  --color-primary-500-rgb: 239 68 68;
+  --color-primary-600-rgb: 220 38 38;
+  --color-primary-700-rgb: 185 28 28;
+  --color-primary-800-rgb: 153 27 27;
+  --color-primary-900-rgb: 127 29 29;
+  --color-primary-950-rgb: 69 10 10;
+
+  /* Accent — warm gold, used to tell the two rooms apart and for secondary emphasis */
+  --color-accent-50-rgb: 255 251 235;
+  --color-accent-100-rgb: 254 243 199;
+  --color-accent-200-rgb: 253 230 138;
+  --color-accent-300-rgb: 252 211 77;
+  --color-accent-400-rgb: 251 191 36;
+  --color-accent-500-rgb: 245 158 11;
+  --color-accent-600-rgb: 217 119 6;
+  --color-accent-700-rgb: 180 83 9;
+
+  /* Neutral surfaces & text — warm off-white, comfortable light theme */
+  --color-app-rgb: 255 250 249;
+  --color-surface-rgb: 255 255 255;
+  --color-surface-muted-rgb: 253 243 241;
+  --color-surface-hover-rgb: 250 237 235;
+
+  --color-line-rgb: 241 227 224;
+  --color-line-strong-rgb: 231 207 201;
+
+  --color-ink-rgb: 39 32 30;
+  --color-ink-muted-rgb: 107 94 89;
+  --color-ink-subtle-rgb: 156 140 134;
+  --color-ink-inverse-rgb: 255 255 255;
+
+  /* Status */
+  --color-success-rgb: 21 128 61;
+  --color-success-bg-rgb: 240 253 244;
+  --color-success-line-rgb: 187 247 208;
+
+  --color-danger-rgb: 185 28 28;
+  --color-danger-bg-rgb: 254 242 242;
+  --color-danger-line-rgb: 254 202 202;
+
+  --color-warning-rgb: 180 83 9;
+  --color-warning-bg-rgb: 255 251 235;
+  --color-warning-line-rgb: 253 230 138;
+
+  /*
+   * Shape — the one radius every clickable button in the app uses
+   * (see tailwind.config.ts `rounded-btn`). Change roundness site-wide here.
+   */
+  --radius-btn: 1.25rem;
+}
+
+/* Single source of truth for heading sizes, keyed to the home page's values. */
+@layer base {
+  h1, h2, h3 {
+    font-family: 'Kanit', sans-serif; /* mirrors tailwind.config.ts fontFamily.display */
+  }
+  /* Bare h1 = the home page hero. Thinner and smaller than before at every step. */
+  h1 { font-weight: 700; font-size: 2.25rem; }
+  h2 { font-weight: 600; font-size: 1.5rem; }
+  h3 { font-weight: 600; font-size: 1rem; }
+  @media (min-width: 640px) { h1 { font-size: 3rem; } }
+  @media (min-width: 1024px) { h1 { font-size: 4rem; } }
+
+  /* Sub-page title header (reserve/statistics/my-reservations/all-reservations) — smaller, shared size. */
+  h1.page-title { font-size: 1.75rem; }
+  @media (min-width: 640px) { h1.page-title { font-size: 2.5rem; } }
+  @media (min-width: 1024px) { h1.page-title { font-size: 3.25rem; } }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: rgb(var(--color-app-rgb));
+  min-height: 100vh;
+  font-weight: 500;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgb(var(--color-surface-muted-rgb));
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--color-primary-300-rgb));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--color-primary-400-rgb));
+}
+
+/* Card surface — flat, bordered, softly elevated. No blur/glassmorphism. */
+.card {
+  background: rgb(var(--color-surface-rgb));
+  border: 1px solid rgb(var(--color-line-rgb));
+  box-shadow: 0 1px 2px rgb(var(--color-ink-rgb) / 0.04), 0 1px 3px rgb(var(--color-ink-rgb) / 0.06);
+}
+
+.card-muted {
+  background: rgb(var(--color-surface-muted-rgb));
+  border: 1px solid rgb(var(--color-line-rgb));
+}
+
+/* Input styles */
+.input-field {
+  background: rgb(var(--color-surface-rgb));
+  border: 1px solid rgb(var(--color-line-strong-rgb));
+  color: rgb(var(--color-ink-rgb));
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: rgb(var(--color-primary-500-rgb));
+  box-shadow: 0 0 0 3px rgb(var(--color-primary-500-rgb) / 0.12);
+}
+
+.input-field::placeholder {
+  color: rgb(var(--color-ink-subtle-rgb));
+}
+
+/*
+ * Button variants — flat, professional, no gradients. Radius is baked in
+ * here (from --radius-btn) so call sites never need their own rounded-*
+ * utility to look like a button; non-.btn-* clickables (calendar days,
+ * slot pickers, tabs, etc.) opt in with the `rounded-btn` utility instead.
+ */
+.btn-primary {
+  background: rgb(var(--color-primary-600-rgb));
+  color: rgb(var(--color-ink-inverse-rgb));
+  border-radius: var(--radius-btn);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: rgb(var(--color-primary-700-rgb));
+  box-shadow: 0 4px 14px rgb(var(--color-primary-600-rgb) / 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-accent {
+  background: rgb(var(--color-accent-600-rgb));
+  color: rgb(var(--color-ink-inverse-rgb));
+  border-radius: var(--radius-btn);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.btn-accent:hover {
+  background: rgb(var(--color-accent-700-rgb));
+  box-shadow: 0 4px 14px rgb(var(--color-accent-600-rgb) / 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: rgb(var(--color-surface-rgb));
+  color: rgb(var(--color-ink-rgb));
+  border: 1px solid rgb(var(--color-line-strong-rgb));
+  border-radius: var(--radius-btn);
+  transition: all 0.15s ease;
+}
+
+.btn-outline:hover {
+  background: rgb(var(--color-surface-hover-rgb));
+  border-color: rgb(var(--color-primary-300-rgb));
+}
+
+/* Animation delays */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+
+/* Calendar custom styles */
+.rdp {
+  --rdp-accent-color: rgb(var(--color-primary-600-rgb));
+  --rdp-background-color: rgb(var(--color-primary-500-rgb) / 0.12);
+  --rdp-outline: 2px solid rgb(var(--color-primary-600-rgb));
+  --rdp-outline-selected: 2px solid rgb(var(--color-accent-600-rgb));
+  margin: 0;
+  font-family: 'IBM Plex Sans Thai', 'IBM Plex Sans', sans-serif;
+}
+
+.rdp-day_selected:not([disabled]) {
+  background-color: rgb(var(--color-primary-600-rgb)) !important;
+  color: rgb(var(--color-ink-inverse-rgb)) !important;
+}
+
+.rdp-day_today:not(.rdp-day_selected) {
+  border: 1px solid rgb(var(--color-accent-500-rgb)) !important;
+  color: rgb(var(--color-accent-700-rgb)) !important;
+}
+
+.rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+  background-color: rgb(var(--color-primary-500-rgb) / 0.1) !important;
+}
+
+.rdp-caption_label {
+  color: rgb(var(--color-ink-rgb)) !important;
+  font-weight: 600 !important;
+}
+
+.rdp-head_cell {
+  color: rgb(var(--color-ink-muted-rgb)) !important;
+  font-weight: 500 !important;
+}
+
+.rdp-day {
+  color: rgb(var(--color-ink-rgb)) !important;
+}
+
+.rdp-day_outside {
+  color: rgb(var(--color-ink-subtle-rgb)) !important;
+}
+
+/* Status badge */
+.status-available {
+  background: rgb(var(--color-success-bg-rgb));
+  border: 1px solid rgb(var(--color-success-line-rgb));
+  color: rgb(var(--color-success-rgb));
+}
+
+.status-busy {
+  background: rgb(var(--color-danger-bg-rgb));
+  border: 1px solid rgb(var(--color-danger-line-rgb));
+  color: rgb(var(--color-danger-rgb));
+}
+
+.status-partial {
+  background: rgb(var(--color-warning-bg-rgb));
+  border: 1px solid rgb(var(--color-warning-line-rgb));
+  color: rgb(var(--color-warning-rgb));
+}
+
+/* Has reservation dot indicator on calendar */
+.has-reservation {
+  position: relative;
+}
+
+.has-reservation::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgb(var(--color-accent-500-rgb));
+}
+
+/*
+ * Loading skeleton — a muted block with a light band sweeping across it,
+ * rather than a flat pulsing box. Used by the shape-matched placeholders in
+ * components/Skeleton.tsx (ReservationCardSkeleton, StatCardSkeleton, ...),
+ * which mirror the real component's layout instead of a single rectangle.
+ */
+/* No border-radius here by design (like .card) — pair with a rounded-* utility at each use site. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgb(var(--color-surface-muted-rgb));
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(var(--color-surface-rgb) / 0.8), transparent);
+  animation: skeletonShimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+  100% { transform: translateX(100%); }
+}
+
+/* Native select styling */
+select.input-field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239c8c86' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 40px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+select.input-field option {
+  background: rgb(var(--color-surface-rgb));
+  color: rgb(var(--color-ink-rgb));
+}

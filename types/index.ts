@@ -1,0 +1,84 @@
+export type Room = {
+  id: string;
+  name: "SMC 601" | "SMC 605";
+  capacity: number;
+  description: string;
+  amenities: string[];
+};
+
+export type Equipment = "bi_machine" | "visual_system" | "audio_system";
+
+export const EQUIPMENT_OPTIONS: { id: Equipment; label: string; iconName: string }[] = [
+  { id: "bi_machine", label: "เครื่อง BI", iconName: "BarChart2" },
+  { id: "visual_system", label: "ระบบภาพ", iconName: "Projector" },
+  { id: "audio_system", label: "ระบบเสียง", iconName: "Volume2" },
+];
+
+export type Reservation = {
+  id: string;
+  user_id: string;
+  room_ids: string[];
+  room_id?: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  title: string;
+  description?: string;
+  equipment: Equipment[];
+  status: "confirmed" | "cancelled";
+  created_at: string;
+  user_email?: string;
+  user_name?: string;
+  department?: string;
+  internal_number?: string;
+  profiles?: {
+    department?: string;
+    full_name?: string;
+    email?: string;
+    avatar_url?: string;
+  };
+};
+
+export const TIME_OPTIONS = [
+  "07:00", "08:00", "09:00", "10:00", "11:00", "12:00",
+  "13:00", "14:00", "15:00", "16:00", "17:00", "18:00",
+];
+
+export const ROOMS: Room[] = [
+  {
+    id: "smc-601",
+    name: "SMC 601",
+    capacity: 50,
+    description: "ห้องประชุมขนาดกลาง ชั้น 6",
+    amenities: ["โปรเจกเตอร์", "ไวท์บอร์ด", "WiFi", "เครื่องปรับอากาศ"],
+  },
+  {
+    id: "smc-605",
+    name: "SMC 605",
+    capacity: 50,
+    description: "ห้องประชุมขนาดใหญ่ ชั้น 6",
+    amenities: ["โปรเจกเตอร์", "ไวท์บอร์ด", "WiFi", "เครื่องปรับอากาศ", "ระบบเสียง"],
+  },
+];
+
+export const ROOM_LABELS: Record<string, string> = {
+  "smc-601": "601",
+  "smc-605": "605",
+};
+
+/**
+ * Every place in the UI that needs to color-code a room (calendar dots,
+ * booking cards, the slot picker, stat panels) reads from here instead of
+ * repeating its own "id === 'smc-601' ? ... : ..." class-name ternary.
+ * Room 601 reads as accent (gold), 605 as primary (red).
+ */
+export type RoomThemeKey = "accent" | "primary";
+
+export const ROOM_THEME: Record<string, RoomThemeKey> = {
+  "smc-601": "accent",
+  "smc-605": "primary",
+};
+
+export const getRoomTheme = (roomId: string): RoomThemeKey => ROOM_THEME[roomId] ?? "primary";
+
+export const getRoomLabel = (roomId: string): string => ROOM_LABELS[roomId] ?? roomId;
