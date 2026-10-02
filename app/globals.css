@@ -101,20 +101,16 @@ body {
   font-weight: 500;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+/* Scrollbars hidden everywhere — scrolling itself still works (wheel,
+   touch, keyboard), the track/thumb are just not rendered. */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge/IE */
 }
-::-webkit-scrollbar-track {
-  background: rgb(var(--color-surface-muted-rgb));
-}
-::-webkit-scrollbar-thumb {
-  background: rgb(var(--color-primary-300-rgb));
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--color-primary-400-rgb));
+*::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Edge Chromium */
+  width: 0;
+  height: 0;
 }
 
 /* Card surface — flat, bordered, softly elevated. No blur/glassmorphism. */

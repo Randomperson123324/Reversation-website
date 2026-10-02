@@ -12,7 +12,6 @@ import { Reservation, EQUIPMENT_OPTIONS, getRoomTheme } from "@/types";
 import { getRoomStyle } from "@/lib/roomStyles";
 import { exportReservationsToExcel } from "@/lib/exportExcel";
 import { StatCardSkeleton, RoomCardSkeleton, BarRowSkeleton, BarChartSkeleton } from "@/components/Skeleton";
-import { generateMockReservations } from "@/lib/mockReservations"; // TEMP: see file for removal note
 import { BarChart3, Calendar, Clock, TrendingUp, Building2, BarChart2, Projector, Volume2, CalendarRange, X, FileSpreadsheet } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -58,9 +57,7 @@ function StatisticsContent() {
       .eq("status", "confirmed")
       .gte("date", threeMonthsAgo)
       .order("date");
-    // TEMP: fall back to generated fixture data when the real query comes back
-    // empty (no Supabase project is connected — see lib/mockReservations.ts).
-    setReservations(data && data.length ? data : generateMockReservations(new Date().getFullYear()));
+    setReservations(data || []);
     setLoading(false);
   };
 
@@ -73,8 +70,7 @@ function StatisticsContent() {
       .gte("date", `${year}-01-01`)
       .lte("date", `${year}-12-31`)
       .order("date");
-    // TEMP: see note above.
-    setYearReservations(data && data.length ? data : generateMockReservations(year));
+    setYearReservations(data || []);
     setYearLoading(false);
   }, []);
 
