@@ -6,12 +6,21 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 
-type Pending = { id: string; href: string; label: string; icon: LucideIcon } | null;
+// `id` is null for transitions with no clicked icon+label to morph from (e.g. a
+// calendar double-click) — those just fade/pop in centered instead of flying in.
+type Pending = { id: string | null; href: string; label: string; icon: LucideIcon } | null;
 
 const PageTransitionContext = createContext<{
   pendingId: string | null;
+  isTransitioning: boolean;
   beginTransition: (p: NonNullable<Pending>) => void;
-}>({ pendingId: null, beginTransition: () => {} });
+}>({ pendingId: null, isTransitioning: false, beginTransition: () => {} });
+
+// For triggering the loading screen from non-link interactions (e.g. double-clicking
+// a calendar day) — call beginTransition({ id: null, href, label, icon }) then navigate.
+export function usePageTransition() {
+  return useContext(PageTransitionContext);
+}
 
 const DISMISS_MS = 300;
 
@@ -66,9 +75,12 @@ export function PageTransitionProvider({ children }: { children: React.ReactNode
   // The source nav link should start fading back in the moment dismissal
   // begins, in sync with the overlay's (now layoutId-detached) fade-out.
   const pendingId = pending && !dismissing ? pending.id : null;
+  // Separate from pendingId (which can itself be null for a no-morph transition) —
+  // this just answers "is a transition currently in flight", for blocking new clicks.
+  const isTransitioning = pending !== null && !dismissing;
 
   return (
-    <PageTransitionContext.Provider value={{ pendingId, beginTransition }}>
+    <PageTransitionContext.Provider value={{ pendingId, isTransitioning, beginTransition }}>
       {children}
 
       {/* Always mounted (not AnimatePresence-gated) so it can fade both in and out
@@ -84,9 +96,10 @@ export function PageTransitionProvider({ children }: { children: React.ReactNode
         {pending && (
           <div className="fixed inset-0 z-[101] flex flex-col items-center justify-center gap-4 pointer-events-none">
             <motion.div
-              layoutId={dismissing ? undefined : pending.id}
+              layoutId={dismissing || !pending.id ? undefined : pending.id}
+              initial={pending.id ? undefined : { opacity: 0, scale: 0.85 }}
               animate={dismissing ? { opacity: 0, scale: 0.85 } : { opacity: 1, scale: 1 }}
-              transition={dismissing ? { duration: DISMISS_MS / 1000 } : { type: "spring", stiffness: 300, damping: 30 }}
+              transition={dismissing ? { duration: DISMISS_MS / 1000 } : pending.id ? { type: "spring", stiffness: 300, damping: 30 } : { duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               className="flex flex-col items-center gap-4 font-display font-bold text-primary-600"
             >
               <pending.icon size={56} />
@@ -124,12 +137,11 @@ export function TransitionLink({
 }: TransitionLinkProps) {
   const instanceId = useId();
   const layoutId = `nav-transition-${instanceId}`;
-  const { pendingId, beginTransition } = useContext(PageTransitionContext);
-  const isAnyPending = pendingId !== null;
+  const { pendingId, isTransitioning, beginTransition } = useContext(PageTransitionContext);
 
   const handleClick = () => {
     onClick?.();
-    if (isAnyPending) return; // ignore clicks while a transition is already in flight
+    if (isTransitioning) return; // ignore clicks while a transition is already in flight
     beginTransition({ id: layoutId, href, label, icon: Icon });
   };
 

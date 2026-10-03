@@ -338,7 +338,7 @@ function ReserveContent() {
               as the current step grows big and the rest shrink, instead of swapping elements
               in and out. overflow-x-auto is just a safety net — no shared-layout boundary is
               crossed here (unlike the old hero/step-bar split), so it can't clip the animation. */}
-          <div className="hidden sm:flex items-center justify-center flex-nowrap gap-3 overflow-x-auto pb-1">
+          <div className="hidden sm:flex items-center justify-center flex-nowrap gap-3 overflow-x-auto scrollbar-hide pb-1">
             {STEPS.map(({ n, label }, i, arr) => {
               const isCurrent = step === n;
               const done = step > n;
@@ -348,7 +348,7 @@ function ReserveContent() {
                     layout
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     className={`flex-shrink-0 rounded-full flex items-center justify-center font-display font-bold border-2 transition-colors duration-300 ${isCurrent
-                      ? "w-14 h-14 text-2xl bg-primary-600 border-primary-600 text-ink-inverse"
+                      ? "w-16 h-16 text-3xl bg-primary-600 border-primary-600 text-ink-inverse"
                       : done
                         ? "w-9 h-9 text-base bg-primary-600 border-primary-600 text-ink-inverse"
                         : "w-9 h-9 text-base border-line-strong text-ink-subtle"
@@ -360,7 +360,7 @@ function ReserveContent() {
                     layout
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     className={`whitespace-nowrap font-display transition-colors duration-300 ${isCurrent
-                      ? "text-[1.75rem] sm:text-[2.5rem] lg:text-[3.25rem] font-black text-ink leading-tight"
+                      ? "text-[2.25rem] sm:text-[3rem] lg:text-[4rem] font-black text-ink leading-tight"
                       : `text-base font-semibold ${done ? "text-ink-muted" : "text-ink-subtle"}`
                       }`}
                   >
@@ -388,7 +388,7 @@ function ReserveContent() {
                       layout
                       transition={{ type: "spring", stiffness: 300, damping: 30 }}
                       className={`flex-shrink-0 rounded-full flex items-center justify-center font-display font-bold border-2 transition-colors duration-300 ${isCurrent
-                        ? "w-11 h-11 text-xl bg-primary-600 border-primary-600 text-ink-inverse"
+                        ? "w-12 h-12 text-2xl bg-primary-600 border-primary-600 text-ink-inverse"
                         : done
                           ? "w-9 h-9 text-base bg-primary-600 border-primary-600 text-ink-inverse"
                           : "w-9 h-9 text-base border-line-strong text-ink-subtle"
@@ -404,7 +404,7 @@ function ReserveContent() {
                     layout
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     className={`font-display transition-colors duration-300 pb-4 ${isCurrent
-                      ? "text-[1.75rem] font-black text-ink leading-tight pt-1"
+                      ? "text-[2.25rem] font-black text-ink leading-tight pt-1"
                       : `text-base font-semibold pt-1.5 ${done ? "text-ink-muted" : "text-ink-subtle"}`
                       }`}
                   >

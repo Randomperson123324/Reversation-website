@@ -3,14 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { TransitionLink } from "@/components/PageTransition";
+import { TransitionLink, usePageTransition } from "@/components/PageTransition";
 import { createClient } from "@/lib/supabase/client";
 import { format, startOfMonth, endOfMonth, isSameDay } from "date-fns";
 import { th } from "date-fns/locale";
 import { Reservation, ROOMS, getRoomTheme, getRoomLabel } from "@/types";
 import { getRoomStyle } from "@/lib/roomStyles";
 import Navbar from "@/components/Navbar";
-import MonthCalendar from "@/components/MonthCalendar";
+import MonthCalendar, { dateTransitionLayoutId } from "@/components/MonthCalendar";
 import { Plus, Calendar, BarChart3, Clock, UserRoundCheck } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -21,6 +21,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const supabase = createClient();
+  const { beginTransition, isTransitioning } = usePageTransition();
 
   const fetchReservations = useCallback(async () => {
     setLoading(true);
@@ -295,7 +296,13 @@ export default function HomePage() {
                 onMonthChange={setCurrentMonth}
                 selectedDate={selectedDate}
                 onSelectDate={setSelectedDate}
-                onDoubleClickDate={(day) => router.push(`/reserve?date=${format(day, "yyyy-MM-dd")}&step=2`)}
+                onDoubleClickDate={(day) => {
+                  if (isTransitioning) return;
+                  const href = `/reserve?date=${format(day, "yyyy-MM-dd")}&step=2`;
+                  beginTransition({ id: dateTransitionLayoutId(day), href, label: "จองห้องประชุม", icon: Plus });
+                  router.push(href);
+                }}
+                enableDateTransition
                 getDayDots={getDayDots}
               />
             </div>
