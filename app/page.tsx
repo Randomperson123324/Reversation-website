@@ -125,7 +125,7 @@ export default function HomePage() {
 
       {/* Main Content */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 py-8 pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
 
           {/* LEFT: Monthly stats */}
           <div className="lg:col-span-2 space-y-5">
@@ -289,7 +289,14 @@ export default function HomePage() {
           </div>
 
           {/* RIGHT: Calendar */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 space-y-5">
+            {/* Invisible spacer matching the "ภาพรวมเดือนนี้" heading block on the
+                left, so the calendar card's top edge lines up with the first
+                stat card's top edge instead of the column top. */}
+            <div className="invisible hidden lg:block" aria-hidden="true">
+              <h2 className="mb-1">ภาพรวมเดือนนี้</h2>
+              <p className="text-lg font-medium">&nbsp;</p>
+            </div>
             <div className="card rounded-2xl p-5 sticky top-20">
               <MonthCalendar
                 currentMonth={currentMonth}
