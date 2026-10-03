@@ -192,9 +192,18 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {menuOpen && (
-        <div className="md:hidden bg-surface border-t border-line px-4 py-4 space-y-1">
+      {/* Mobile menu — expand/collapse: same height-from-0-to-auto treatment as
+          the สถิติการจอง dropdown and the calendar's month/year picker. */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div
+            initial={{ height: 0 }}
+            animate={{ height: "auto" }}
+            exit={{ height: 0 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="md:hidden overflow-hidden bg-surface border-t border-line"
+          >
+          <div className="px-4 py-4 space-y-1">
           {navLinks.map(({ href, label, icon: Icon }) => (
             <TransitionLink
               key={href}
@@ -275,8 +284,10 @@ export default function Navbar() {
               </Link>
             )}
           </div>
-        </div>
-      )}
+          </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }
