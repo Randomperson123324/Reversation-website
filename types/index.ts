@@ -60,3 +60,25 @@ export const ROOMS: Room[] = [
     amenities: ["โปรเจกเตอร์", "ไวท์บอร์ด", "WiFi", "เครื่องปรับอากาศ", "ระบบเสียง"],
   },
 ];
+
+export const ROOM_LABELS: Record<string, string> = {
+  "smc-601": "601",
+  "smc-605": "605",
+};
+
+/**
+ * Every place in the UI that needs to color-code a room (calendar dots,
+ * booking cards, the slot picker, stat panels) reads from here instead of
+ * repeating its own "id === 'smc-601' ? ... : ..." class-name ternary.
+ * Room 601 reads as accent (gold), 605 as primary (red).
+ */
+export type RoomThemeKey = "accent" | "primary";
+
+export const ROOM_THEME: Record<string, RoomThemeKey> = {
+  "smc-601": "accent",
+  "smc-605": "primary",
+};
+
+export const getRoomTheme = (roomId: string): RoomThemeKey => ROOM_THEME[roomId] ?? "primary";
+
+export const getRoomLabel = (roomId: string): string => ROOM_LABELS[roomId] ?? roomId;

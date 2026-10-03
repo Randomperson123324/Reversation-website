@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { PageTransitionProvider } from "@/components/PageTransition";
 
 export const metadata: Metadata = {
   title: "SMC Room Booking | ระบบจองห้องประชุม",
@@ -19,16 +20,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="font-body bg-surface-950 text-white antialiased">
-        {children}
+      <body className="font-body bg-app text-ink antialiased">
+        <PageTransitionProvider>{children}</PageTransitionProvider>
         <Toaster
-          theme="dark"
+          theme="light"
           position="top-right"
           toastOptions={{
             style: {
-              background: "#1e293b",
-              border: "1px solid rgba(99,102,241,0.3)",
-              color: "#f1f5f9",
+              background: "rgb(var(--color-surface-rgb))",
+              border: "1px solid rgb(var(--color-line-strong-rgb))",
+              color: "rgb(var(--color-ink-rgb))",
             },
           }}
         />

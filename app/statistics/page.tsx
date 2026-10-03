@@ -1,27 +1,50 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import MonthCalendar, { dayLayoutId } from "@/components/MonthCalendar";
+import ReservationCard from "@/components/ReservationCard";
 import { createClient } from "@/lib/supabase/client";
 import { format, startOfMonth, endOfMonth, subMonths, eachDayOfInterval, isSameDay } from "date-fns";
 import { th } from "date-fns/locale";
-import { Reservation, EQUIPMENT_OPTIONS } from "@/types";
-import { BarChart3, Calendar, Clock, TrendingUp, Building2, BarChart2, Projector, Volume2 } from "lucide-react";
+import { Reservation, EQUIPMENT_OPTIONS, getRoomTheme } from "@/types";
+import { getRoomStyle } from "@/lib/roomStyles";
+import { exportReservationsToExcel } from "@/lib/exportExcel";
+import { StatCardSkeleton, RoomCardSkeleton, BarRowSkeleton, BarChartSkeleton } from "@/components/Skeleton";
+import { BarChart3, Calendar, Clock, TrendingUp, Building2, BarChart2, Projector, Volume2, CalendarRange, X, FileSpreadsheet } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 const ICON_MAP: Record<string, React.ElementType> = { BarChart2, Projector, Volume2 };
 
-export default function StatisticsPage() {
+type StatsView = "month" | "year";
+
+function StatisticsContent() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [yearReservations, setYearReservations] = useState<Reservation[]>([]);
+  const [yearLoading, setYearLoading] = useState(true);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
+  // Drop the day summary when the viewed month changes — it's no longer in view.
+  useEffect(() => { setSelectedDay(null); }, [selectedMonth]);
+
+  const [view, setView] = useState<StatsView>(searchParams.get("view") === "year" ? "year" : "month");
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) router.push("/auth/login?redirect=/statistics");
-    });
+    setView(searchParams.get("view") === "year" ? "year" : "month");
+  }, [searchParams]);
+
+  const switchView = (v: StatsView) => {
+    setView(v);
+    router.replace(`/statistics?view=${v}`, { scroll: false });
+  };
+
+  useEffect(() => {
     fetchAllReservations();
   }, []);
 
@@ -37,6 +60,23 @@ export default function StatisticsPage() {
     setReservations(data || []);
     setLoading(false);
   };
+
+  const fetchYearReservations = useCallback(async (year: number) => {
+    setYearLoading(true);
+    const { data } = await supabase
+      .from("reservations")
+      .select("*")
+      .eq("status", "confirmed")
+      .gte("date", `${year}-01-01`)
+      .lte("date", `${year}-12-31`)
+      .order("date");
+    setYearReservations(data || []);
+    setYearLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (view === "year") fetchYearReservations(selectedYear);
+  }, [selectedYear, view, fetchYearReservations]);
 
   const monthReservations = reservations.filter((r) => {
     const d = new Date(r.date + "T00:00:00");
@@ -72,6 +112,10 @@ export default function StatisticsPage() {
   const getDayCount = (date: Date) =>
     monthReservations.filter((r) => isSameDay(new Date(r.date + "T00:00:00"), date)).length;
 
+  const selectedDayReservations = selectedDay
+    ? monthReservations.filter((r) => isSameDay(new Date(r.date + "T00:00:00"), selectedDay))
+    : [];
+
   const maxDayCount = Math.max(...days.map(getDayCount), 1);
 
   // Hour distribution
@@ -87,19 +131,32 @@ export default function StatisticsPage() {
   });
   const maxHourCount = Math.max(...hourDistribution.map((h) => h.count), 1);
 
+  // Yearly summary
+  const yearRoom601 = yearReservations.filter((r) => (r.room_ids || [r.room_id]).includes("smc-601"));
+  const yearRoom605 = yearReservations.filter((r) => (r.room_ids || [r.room_id]).includes("smc-605"));
+  const yearActiveDays = new Set(yearReservations.map((r) => r.date)).size;
+
+  const monthlyBreakdown = Array.from({ length: 12 }, (_, i) => {
+    const count = yearReservations.filter((r) => new Date(r.date + "T00:00:00").getMonth() === i).length;
+    const label = format(new Date(selectedYear, i, 1), "MMM", { locale: th });
+    return { label, count };
+  });
+  const maxMonthlyCount = Math.max(...monthlyBreakdown.map((m) => m.count), 1);
+  const isCurrentYear = selectedYear >= new Date().getFullYear();
+
   const StatCard = ({ icon: Icon, label, value, sublabel, color = "primary" }: {
-    icon: any; label: string; value: string | number; sublabel?: string; color?: "primary" | "accent" | "green";
+    icon: any; label: string; value: string | number; sublabel?: string; color?: "primary" | "accent" | "success";
   }) => (
-    <div className="glass rounded-2xl p-5 border border-primary-700/20">
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${
-        color === "primary" ? "bg-primary-600/20 text-primary-400" :
-        color === "accent" ? "bg-accent-500/20 text-accent-400" : "bg-emerald-500/20 text-emerald-400"
+    <div className="card rounded-2xl p-5">
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center mb-3 ${
+        color === "primary" ? "bg-primary-50 text-primary-600" :
+        color === "accent" ? "bg-accent-50 text-accent-600" : "bg-success-bg text-success"
       }`}>
-        <Icon size={18} />
+        <Icon size={20} />
       </div>
-      <p className="font-display text-3xl font-bold text-white mb-0.5">{value}</p>
-      <p className="text-sm font-medium text-slate-300">{label}</p>
-      {sublabel && <p className="text-xs text-slate-500 mt-0.5">{sublabel}</p>}
+      <p className="font-display text-3xl font-bold text-ink mb-0.5">{value}</p>
+      <p className="text-sm font-semibold text-ink-muted">{label}</p>
+      {sublabel && <p className="text-xs text-ink-subtle mt-0.5">{sublabel}</p>}
     </div>
   );
 
@@ -107,194 +164,421 @@ export default function StatisticsPage() {
     selectedMonth.getFullYear() >= new Date().getFullYear();
 
   return (
-    <div className="min-h-screen bg-surface-950">
+    <div className="min-h-screen bg-app">
       <Navbar />
       <div className="pt-16">
-        <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary-950/50 to-transparent" />
+        <div className="relative overflow-hidden bg-hero-gradient">
           <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-10">
-            <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mb-2">
-              <span className="gradient-text">สถิติการจอง</span>
+            <h1 className="page-title text-ink mb-2">
+              สถิติการจอง
             </h1>
-            <p className="text-slate-400">ภาพรวมการใช้งานห้องประชุม SMC</p>
+            <p className="text-ink-muted text-lg font-medium">ภาพรวมการใช้งานห้องประชุม SMC</p>
           </div>
         </div>
 
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-16 space-y-6">
 
-          {/* Month selector */}
-          <div className="flex items-center gap-3">
+          {/* View switch — mirrors the navbar's "สถิติการจอง" dropdown */}
+          <div className="flex gap-2">
             <button
-              onClick={() => setSelectedMonth((m) => subMonths(m, 1))}
-              className="px-4 py-2 rounded-xl glass-light text-slate-400 hover:text-white border border-white/5 transition-all text-sm"
+              onClick={() => switchView("month")}
+              className={`px-5 py-2.5 rounded-btn text-base font-semibold transition-all ${view === "month" ? "bg-primary-600 text-ink-inverse" : "btn-outline"}`}
             >
-              ← เดือนก่อน
+              สรุปรายเดือน
             </button>
-            <span className="font-display font-semibold text-white text-lg">
-              {format(selectedMonth, "MMMM yyyy", { locale: th })}
-            </span>
             <button
-              onClick={() => { if (!isCurrentMonth) setSelectedMonth((m) => { const n = new Date(m); n.setMonth(n.getMonth() + 1); return n; }); }}
-              disabled={isCurrentMonth}
-              className="px-4 py-2 rounded-xl glass-light text-slate-400 hover:text-white border border-white/5 transition-all text-sm disabled:opacity-30 disabled:cursor-not-allowed"
+              onClick={() => switchView("year")}
+              className={`px-5 py-2.5 rounded-btn text-base font-semibold transition-all ${view === "year" ? "bg-primary-600 text-ink-inverse" : "btn-outline"}`}
             >
-              เดือนถัดไป →
+              สรุปรายปี
+            </button>
+          </div>
+
+          {view === "month" && (
+          <>
+
+          {/* Month selector */}
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSelectedMonth((m) => subMonths(m, 1))}
+                className="px-4 py-2.5 btn-outline text-base font-medium"
+              >
+                ← เดือนก่อน
+              </button>
+              <span className="font-display font-bold text-ink text-xl">
+                {format(selectedMonth, "MMMM yyyy", { locale: th })}
+              </span>
+              <button
+                onClick={() => { if (!isCurrentMonth) setSelectedMonth((m) => { const n = new Date(m); n.setMonth(n.getMonth() + 1); return n; }); }}
+                disabled={isCurrentMonth}
+                className="px-4 py-2.5 btn-outline text-base font-medium disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                เดือนถัดไป →
+              </button>
+            </div>
+            <button
+              onClick={() => exportReservationsToExcel(monthReservations, `การจอง-${format(selectedMonth, "yyyy-MM")}.xlsx`)}
+              disabled={monthReservations.length === 0}
+              className="flex items-center gap-2 px-4 py-2.5 btn-outline text-base font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <FileSpreadsheet size={18} />
+              ส่งออกเป็น Excel
             </button>
           </div>
 
           {/* Stat cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard icon={Calendar} label="การจองทั้งหมด" value={monthReservations.length} sublabel="ครั้ง" color="primary" />
-            <StatCard icon={Clock} label="ชั่วโมงรวม" value={totalHours(monthReservations).toFixed(1)} sublabel="ชั่วโมง" color="accent" />
-            <StatCard icon={Building2} label="วันที่มีการจอง" value={new Set(monthReservations.map((r) => r.date)).size} sublabel="วัน" color="green" />
-            <StatCard icon={BarChart3} label="เฉลี่ยต่อวัน" value={
-              new Set(monthReservations.map((r) => r.date)).size > 0
-                ? (monthReservations.length / new Set(monthReservations.map((r) => r.date)).size).toFixed(1)
-                : "0"
-            } sublabel="ครั้ง/วัน" color="primary" />
-          </div>
+          <motion.div layout transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {loading ? (
+              <>
+                <StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton />
+              </>
+            ) : (
+              <>
+                <StatCard icon={Calendar} label="การจองทั้งหมด" value={monthReservations.length} sublabel="ครั้ง" color="primary" />
+                <StatCard icon={Clock} label="ชั่วโมงรวม" value={totalHours(monthReservations).toFixed(1)} sublabel="ชั่วโมง" color="accent" />
+                <StatCard icon={Building2} label="วันที่มีการจอง" value={new Set(monthReservations.map((r) => r.date)).size} sublabel="วัน" color="success" />
+                <StatCard icon={BarChart3} label="เฉลี่ยต่อวัน" value={
+                  new Set(monthReservations.map((r) => r.date)).size > 0
+                    ? (monthReservations.length / new Set(monthReservations.map((r) => r.date)).size).toFixed(1)
+                    : "0"
+                } sublabel="ครั้ง/วัน" color="primary" />
+              </>
+            )}
+          </motion.div>
 
           {/* Room comparison */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[
-              { room: "SMC 601", id: "smc-601", res: room601, color: "accent" },
-              { room: "SMC 605", id: "smc-605", res: room605, color: "primary" },
-            ].map(({ room, id, res, color }) => (
-              <div key={id} className="glass rounded-2xl p-5 border border-primary-700/20">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-display text-xl font-bold text-white">{room}</h3>
-                  <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                    color === "accent" ? "bg-accent-500/20 text-accent-300" : "bg-primary-500/20 text-primary-300"
-                  }`}>
-                    {res.length} ครั้ง
-                  </span>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-slate-400">
-                    <span>ชั่วโมงรวม</span>
-                    <span className="text-white font-medium">{totalHours(res).toFixed(1)} ชม.</span>
-                  </div>
-                  <div className="flex justify-between text-slate-400">
-                    <span>สัดส่วน</span>
-                    <span className="text-white font-medium">
-                      {monthReservations.length ? Math.round((res.length / monthReservations.length) * 100) : 0}%
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-3 h-2 rounded-full bg-white/5 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-700 ${color === "accent" ? "bg-accent-gradient" : "bg-primary-600"}`}
-                    style={{ width: monthReservations.length ? `${(res.length / monthReservations.length) * 100}%` : "0%" }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Equipment usage */}
-          <div className="glass rounded-2xl p-6 border border-primary-700/20">
-            <h3 className="font-display font-semibold text-white mb-5 flex items-center gap-2">
-              <BarChart3 size={18} className="text-primary-400" />
-              การใช้อุปกรณ์
-            </h3>
-            <div className="space-y-3">
-              {equipmentCounts.map((eq) => {
-                const IconComp = ICON_MAP[eq.iconName];
-                const pct = maxEquipCount > 0 ? (eq.count / maxEquipCount) * 100 : 0;
+          <motion.div layout transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {loading ? (
+              <>
+                <RoomCardSkeleton /><RoomCardSkeleton />
+              </>
+            ) : (
+              [
+                { room: "SMC 601", id: "smc-601", res: room601 },
+                { room: "SMC 605", id: "smc-605", res: room605 },
+              ].map(({ room, id, res }) => {
+                const style = getRoomStyle(getRoomTheme(id));
                 return (
-                  <div key={eq.id} className="flex items-center gap-4">
-                    <div className="w-9 h-9 rounded-lg bg-primary-600/20 text-primary-400 flex items-center justify-center flex-shrink-0">
-                      {IconComp && <IconComp size={16} />}
+                  <div key={id} className="card rounded-2xl p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-ink">{room}</h3>
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${style.badgeBg}`}>
+                        {res.length} ครั้ง
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm text-slate-300">{eq.label}</span>
-                        <span className="text-sm font-medium text-white">{eq.count} ครั้ง</span>
+                    <div className="space-y-2 text-base">
+                      <div className="flex justify-between text-ink-muted">
+                        <span>ชั่วโมงรวม</span>
+                        <span className="text-ink font-semibold">{totalHours(res).toFixed(1)} ชม.</span>
                       </div>
-                      <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-primary-600 transition-all duration-700"
-                          style={{ width: `${pct}%` }}
-                        />
+                      <div className="flex justify-between text-ink-muted">
+                        <span>สัดส่วน</span>
+                        <span className="text-ink font-semibold">
+                          {monthReservations.length ? Math.round((res.length / monthReservations.length) * 100) : 0}%
+                        </span>
                       </div>
+                    </div>
+                    <div className="mt-3 h-2 rounded-full bg-surface-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${style.dot}`}
+                        style={{ width: monthReservations.length ? `${(res.length / monthReservations.length) * 100}%` : "0%" }}
+                      />
                     </div>
                   </div>
                 );
-              })}
-              {equipmentCounts.every((e) => e.count === 0) && (
-                <p className="text-sm text-slate-500 text-center py-4">ไม่มีการใช้อุปกรณ์เพิ่มเติมในเดือนนี้</p>
-              )}
+              })
+            )}
+          </motion.div>
+
+          </>
+          )}
+
+          {view === "year" && (
+          <>
+
+          {/* Year selector */}
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSelectedYear((y) => y - 1)}
+                className="px-4 py-2.5 btn-outline text-base font-medium"
+              >
+                ← ปีก่อน
+              </button>
+              <span className="font-display font-bold text-ink text-xl">{selectedYear}</span>
+              <button
+                onClick={() => { if (!isCurrentYear) setSelectedYear((y) => y + 1); }}
+                disabled={isCurrentYear}
+                className="px-4 py-2.5 btn-outline text-base font-medium disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                ปีถัดไป →
+              </button>
             </div>
+            <button
+              onClick={() => exportReservationsToExcel(yearReservations, `การจอง-${selectedYear}.xlsx`)}
+              disabled={yearReservations.length === 0}
+              className="flex items-center gap-2 px-4 py-2.5 btn-outline text-base font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <FileSpreadsheet size={18} />
+              ส่งออกเป็น Excel
+            </button>
+          </div>
+
+          {/* Stat cards */}
+          <motion.div layout transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {yearLoading ? (
+              <>
+                <StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton /><StatCardSkeleton />
+              </>
+            ) : (
+              <>
+                <StatCard icon={Calendar} label="การจองทั้งหมด" value={yearReservations.length} sublabel="ครั้ง" color="primary" />
+                <StatCard icon={Clock} label="ชั่วโมงรวม" value={totalHours(yearReservations).toFixed(1)} sublabel="ชั่วโมง" color="accent" />
+                <StatCard icon={Building2} label="วันที่มีการจอง" value={yearActiveDays} sublabel="วัน" color="success" />
+                <StatCard icon={BarChart3} label="เฉลี่ยต่อวัน" value={
+                  yearActiveDays > 0 ? (yearReservations.length / yearActiveDays).toFixed(1) : "0"
+                } sublabel="ครั้ง/วัน" color="primary" />
+              </>
+            )}
+          </motion.div>
+
+          {/* Room comparison */}
+          <motion.div layout transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {yearLoading ? (
+              <>
+                <RoomCardSkeleton /><RoomCardSkeleton />
+              </>
+            ) : (
+              [
+                { room: "SMC 601", id: "smc-601", res: yearRoom601 },
+                { room: "SMC 605", id: "smc-605", res: yearRoom605 },
+              ].map(({ room, id, res }) => {
+                const style = getRoomStyle(getRoomTheme(id));
+                return (
+                  <div key={id} className="card rounded-2xl p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-ink">{room}</h3>
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${style.badgeBg}`}>
+                        {res.length} ครั้ง
+                      </span>
+                    </div>
+                    <div className="space-y-2 text-base">
+                      <div className="flex justify-between text-ink-muted">
+                        <span>ชั่วโมงรวม</span>
+                        <span className="text-ink font-semibold">{totalHours(res).toFixed(1)} ชม.</span>
+                      </div>
+                      <div className="flex justify-between text-ink-muted">
+                        <span>สัดส่วน</span>
+                        <span className="text-ink font-semibold">
+                          {yearReservations.length ? Math.round((res.length / yearReservations.length) * 100) : 0}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-3 h-2 rounded-full bg-surface-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-700 ${style.dot}`}
+                        style={{ width: yearReservations.length ? `${(res.length / yearReservations.length) * 100}%` : "0%" }}
+                      />
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </motion.div>
+
+          {/* Monthly breakdown chart */}
+          <div className="card rounded-2xl p-6">
+            <h3 className="text-ink mb-5 flex items-center gap-2">
+              <CalendarRange size={20} className="text-primary-600" />
+              การจองรายเดือน
+            </h3>
+            <motion.div layout transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}>
+              {yearLoading ? (
+                <BarChartSkeleton bars={12} />
+              ) : (
+                <>
+                  <div className="flex items-end gap-2 h-40">
+                    {monthlyBreakdown.map(({ label, count }) => (
+                      <div key={label} className="flex-1 flex flex-col items-center gap-1.5">
+                        <div className="w-full flex items-end justify-center" style={{ height: "112px" }}>
+                          <div
+                            className="w-full rounded-t-lg bg-primary-500 transition-all duration-700 hover:bg-primary-600"
+                            style={{ height: `${(count / maxMonthlyCount) * 112}px`, minHeight: count > 0 ? "4px" : "0" }}
+                            title={`${count} ครั้ง`}
+                          />
+                        </div>
+                        <span className="text-xs text-ink-subtle whitespace-nowrap">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {yearReservations.length === 0 && (
+                    <p className="text-sm text-ink-subtle text-center py-4">ไม่มีการจองในปีนี้</p>
+                  )}
+                </>
+              )}
+            </motion.div>
+          </div>
+
+          </>
+          )}
+
+          {view === "month" && (
+          <>
+
+          {/* Equipment usage */}
+          <div className="card rounded-2xl p-6">
+            <h3 className="text-ink mb-5 flex items-center gap-2">
+              <BarChart3 size={20} className="text-primary-600" />
+              การใช้อุปกรณ์
+            </h3>
+            <motion.div layout transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }} className="space-y-3">
+              {loading ? (
+                <>
+                  <BarRowSkeleton /><BarRowSkeleton /><BarRowSkeleton />
+                </>
+              ) : (
+                <>
+                  {equipmentCounts.map((eq) => {
+                    const IconComp = ICON_MAP[eq.iconName];
+                    const pct = maxEquipCount > 0 ? (eq.count / maxEquipCount) * 100 : 0;
+                    return (
+                      <div key={eq.id} className="flex items-center gap-4">
+                        <div className="w-9 h-9 rounded-lg bg-primary-50 text-primary-600 flex items-center justify-center flex-shrink-0">
+                          {IconComp && <IconComp size={16} />}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-base text-ink-muted">{eq.label}</span>
+                            <span className="text-base font-semibold text-ink">{eq.count} ครั้ง</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-primary-600 transition-all duration-700"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {equipmentCounts.every((e) => e.count === 0) && (
+                    <p className="text-sm text-ink-subtle text-center py-4">ไม่มีการใช้อุปกรณ์เพิ่มเติมในเดือนนี้</p>
+                  )}
+                </>
+              )}
+            </motion.div>
           </div>
 
           {/* Time distribution */}
-          <div className="glass rounded-2xl p-6 border border-primary-700/20">
-            <h3 className="font-display font-semibold text-white mb-5 flex items-center gap-2">
-              <BarChart3 size={18} className="text-primary-400" />
+          <div className="card rounded-2xl p-6">
+            <h3 className="text-ink mb-5 flex items-center gap-2">
+              <BarChart3 size={20} className="text-primary-600" />
               การกระจายตามช่วงเวลา
             </h3>
-            <div className="flex items-end gap-2 h-40">
-              {hourDistribution.map(({ label, count }) => (
-                <div key={label} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full flex items-end justify-center" style={{ height: "112px" }}>
-                    <div
-                      className="w-full rounded-t-lg bg-primary-600/60 border border-primary-500/30 transition-all duration-700 hover:bg-primary-500/80"
-                      style={{ height: `${(count / maxHourCount) * 112}px`, minHeight: count > 0 ? "4px" : "0" }}
-                      title={`${count} ครั้ง`}
-                    />
+            <motion.div layout transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}>
+              {loading ? (
+                <BarChartSkeleton bars={10} />
+              ) : (
+                <>
+                  <div className="flex items-end gap-2 h-40">
+                    {hourDistribution.map(({ label, count }) => (
+                      <div key={label} className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full flex items-end justify-center" style={{ height: "112px" }}>
+                          <div
+                            className="w-full rounded-t-lg bg-primary-500 transition-all duration-700 hover:bg-primary-600"
+                            style={{ height: `${(count / maxHourCount) * 112}px`, minHeight: count > 0 ? "4px" : "0" }}
+                            title={`${count} ครั้ง`}
+                          />
+                        </div>
+                        <span className="text-xs text-ink-subtle rotate-[-35deg] origin-top-right translate-x-1 whitespace-nowrap">
+                          {label}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                  <span className="text-xs text-slate-500 rotate-[-35deg] origin-top-right translate-x-1 whitespace-nowrap">
-                    {label}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <p className="text-xs text-slate-500 text-center mt-8">ช่วงเวลา (น.)</p>
+                  <p className="text-xs text-ink-subtle text-center mt-8">ช่วงเวลา (น.)</p>
+                </>
+              )}
+            </motion.div>
           </div>
 
-          {/* Calendar heatmap */}
-          <div className="glass rounded-2xl p-6 border border-primary-700/20">
-            <h3 className="font-display font-semibold text-white mb-5 flex items-center gap-2">
-              <TrendingUp size={18} className="text-primary-400" />
+          {/* Calendar heatmap — reuses MonthCalendar in density mode */}
+          <div className="card rounded-2xl p-6">
+            <h3 className="text-ink mb-5 flex items-center gap-2">
+              <TrendingUp size={20} className="text-primary-600" />
               ความหนาแน่นการจองรายวัน
             </h3>
-            <div className="grid grid-cols-7 gap-1.5">
-              {["อา","จ","อ","พ","พฤ","ศ","ส"].map((d) => (
-                <div key={d} className="text-center text-xs text-slate-500 font-medium py-1">{d}</div>
-              ))}
-              {Array.from({ length: days[0].getDay() }).map((_, i) => <div key={`p${i}`} />)}
-              {days.map((day) => {
-                const count = getDayCount(day);
-                const intensity = count / maxDayCount;
-                return (
-                  <div
-                    key={day.toString()}
-                    title={`${format(day, "d MMM", { locale: th })}: ${count} การจอง`}
-                    className="aspect-square rounded-lg flex items-center justify-center text-xs font-medium transition-all hover:scale-110 cursor-default"
-                    style={{
-                      background: count === 0 ? "rgba(255,255,255,0.03)" : `rgba(99,102,241,${0.15 + intensity * 0.7})`,
-                      border: count > 0 ? "1px solid rgba(99,102,241,0.3)" : "1px solid rgba(255,255,255,0.04)",
-                      color: intensity > 0.5 ? "#fff" : "#94a3b8",
-                    }}
+            <MonthCalendar
+              currentMonth={selectedMonth}
+              onMonthChange={setSelectedMonth}
+              showHeader={false}
+              selectedDate={selectedDay ?? undefined}
+              onSelectDate={(day) => setSelectedDay((prev) => (prev && isSameDay(prev, day) ? null : day))}
+              getDayIntensity={(day) => getDayCount(day) / maxDayCount}
+              getDayTitle={(day) => `${format(day, "d MMM", { locale: th })}: ${getDayCount(day)} การจอง`}
+            />
+
+            {/* Day summary — morphs out of the clicked grid cell into a popup, and shrinks back into it on close. */}
+            <AnimatePresence>
+              {selectedDay && (
+                <motion.div
+                  className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setSelectedDay(null)}
+                >
+                  <div className="absolute inset-0 bg-ink/40" />
+                  <motion.div
+                    layoutId={dayLayoutId(selectedDay)}
+                    transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="relative card rounded-2xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto"
                   >
-                    {format(day, "d")}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="flex items-center gap-2 mt-4 text-xs text-slate-500">
-              <span>น้อย</span>
-              {[0, 0.25, 0.5, 0.75, 1].map((v, i) => (
-                <div key={i} className="w-4 h-4 rounded"
-                  style={{ background: v === 0 ? "rgba(255,255,255,0.03)" : `rgba(99,102,241,${0.15 + v * 0.7})` }}
-                />
-              ))}
-              <span>มาก</span>
-            </div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-display font-bold text-ink text-xl">
+                        {format(selectedDay, "EEEE d MMMM yyyy", { locale: th })}
+                      </h4>
+                      <button
+                        onClick={() => setSelectedDay(null)}
+                        className="p-2 rounded-btn text-ink-subtle hover:text-ink hover:bg-surface-hover transition-all"
+                      >
+                        <X size={18} />
+                      </button>
+                    </div>
+                    {selectedDayReservations.length === 0 ? (
+                      <p className="text-sm text-ink-subtle text-center py-6">ไม่มีการจองในวันนี้</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {selectedDayReservations.map((res) => (
+                          <ReservationCard key={res.id} res={res} />
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
+
+          </>
+          )}
 
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StatisticsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-app flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <StatisticsContent />
+    </Suspense>
   );
 }

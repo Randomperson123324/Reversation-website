@@ -6,18 +6,20 @@ import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 import {
-  format, isBefore, startOfDay, isSameDay, isToday,
-  startOfMonth, endOfMonth, eachDayOfInterval,
+  format, isSameDay,
+  startOfMonth, endOfMonth,
 } from "date-fns";
 import { th } from "date-fns/locale";
-import { ROOMS, TIME_OPTIONS, EQUIPMENT_OPTIONS, Equipment, Reservation } from "@/types";
+import { ROOMS, TIME_OPTIONS, EQUIPMENT_OPTIONS, Equipment, Reservation, getRoomTheme } from "@/types";
+import { getRoomStyle } from "@/lib/roomStyles";
+import MonthCalendar from "@/components/MonthCalendar";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Calendar, Clock, Users, ChevronLeft, ChevronRight, CheckCircle,
-  AlertTriangle, BarChart2, Projector, Volume2, Wrench,
+  BarChart2, Projector, Volume2, Wrench,
   Phone, GraduationCap, User, FileText, X,
 } from "lucide-react";
 
-const WEEKDAYS = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 const ICON_MAP: Record<string, React.ElementType> = { BarChart2, Projector, Volume2 };
 
 const DEPARTMENTS = [
@@ -37,23 +39,27 @@ const ALL_SLOTS = TIME_OPTIONS; // 07:00 … 18:00
 type RoomTime = { start: string; end: string; tapStart: string | null };
 const emptyRoomTime = (): RoomTime => ({ start: "", end: "", tapStart: null });
 
-function StepIndicator({ step, current }: { step: number; current: number }) {
-  const done = current > step;
-  return (
-    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all ${done ? "bg-primary-600 border-primary-500 text-white" :
-      current === step ? "border-primary-400 text-primary-300 bg-primary-900/40" :
-        "border-slate-700 text-slate-600"
-      }`}>
-      {done ? <CheckCircle size={16} /> : step}
-    </div>
-  );
-}
+/** Shared between the step row and the screen-reader heading — one source of truth for the labels. */
+const STEPS = [
+  { n: 1, label: "เลือกวันที่" },
+  { n: 2, label: "ห้อง & เวลา" },
+  { n: 3, label: "อุปกรณ์" },
+  { n: 4, label: "รายละเอียด" },
+];
+
+/** Slide direction for the step content card: 1 = forward (next), -1 = backward (back).
+    No opacity fade — the old step slides fully off screen fast, then the new one
+    bounces into place, each with its own transition rather than one shared curve. */
+const stepSlideVariants = {
+  enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%" }),
+  center: { x: 0, transition: { type: "spring" as const, stiffness: 300, damping: 28 } },
+  exit: (dir: number) => ({ x: dir > 0 ? "-100%" : "100%", transition: { duration: 0.2, ease: "easeIn" as const } }),
+};
 
 // Slot grid for one room
 function RoomSlotGrid({
-  roomId, roomTime, onTap, isSlotBooked, reservations,
+  roomTime, onTap, isSlotBooked, reservations,
 }: {
-  roomId: string;
   roomTime: RoomTime;
   onTap: (slot: string) => void;
   isSlotBooked: (slot: string) => boolean;
@@ -61,20 +67,20 @@ function RoomSlotGrid({
 }) {
   const slotClass = (slot: string) => {
     const booked = isSlotBooked(slot);
-    if (booked) return "bg-red-900/20 border-red-700/30 text-red-400 cursor-not-allowed opacity-60";
+    if (booked) return "bg-danger-bg border-danger-line text-danger cursor-not-allowed opacity-60";
     const inRange = roomTime.start && roomTime.end && slot >= roomTime.start && slot <= roomTime.end;
     const isPending = roomTime.tapStart === slot;
-    if (isPending) return "bg-amber-500/30 border-amber-400/50 text-amber-200 scale-105 shadow-lg";
-    if (inRange) return "bg-primary-600/50 border-primary-400/60 text-white scale-[1.02]";
-    if (slot === "18:00" && !roomTime.tapStart && !roomTime.start) return "bg-white/5 border-white/10 text-slate-500 cursor-not-allowed";
-    return "bg-emerald-900/20 border-emerald-700/30 text-emerald-400 hover:bg-emerald-700/30 hover:scale-105 cursor-pointer";
+    if (isPending) return "bg-warning-bg border-warning-line text-warning scale-105 shadow-card";
+    if (inRange) return "bg-primary-600 border-primary-600 text-ink-inverse scale-[1.02]";
+    if (slot === "18:00" && !roomTime.tapStart && !roomTime.start) return "bg-surface-muted border-line text-ink-subtle cursor-not-allowed";
+    return "bg-success-bg border-success-line text-success hover:bg-success-bg hover:border-success hover:scale-105 cursor-pointer";
   };
 
   return (
     <div className="space-y-4 pt-1">
       {/* Hint */}
-      <div className="text-xs text-primary-300/80 bg-primary-900/20 border border-primary-700/20 rounded-lg px-3 py-2 flex items-center gap-2">
-        <Clock size={12} />
+      <div className="text-sm text-primary-700 bg-primary-50 border border-primary-200 rounded-lg px-3 py-2 flex items-center gap-2">
+        <Clock size={14} />
         {!roomTime.tapStart && !roomTime.start
           ? "แตะเวลาเริ่มต้น"
           : roomTime.tapStart
@@ -88,7 +94,7 @@ function RoomSlotGrid({
           <button key={slot} type="button"
             disabled={isSlotBooked(slot) || (slot === "18:00" && !roomTime.tapStart && !roomTime.start)}
             onClick={() => onTap(slot)}
-            className={`py-2.5 rounded-lg text-xs font-medium border transition-all select-none ${slotClass(slot)}`}>
+            className={`py-3 rounded-btn text-sm font-semibold border transition-all select-none ${slotClass(slot)}`}>
             {slot}
           </button>
         ))}
@@ -98,21 +104,21 @@ function RoomSlotGrid({
       {reservations.length > 0 && (
         <div className="space-y-1.5 pt-1">
           {reservations.map((r) => (
-            <div key={r.id} className="flex items-center gap-2 text-xs bg-red-900/10 border border-red-800/20 rounded-lg px-3 py-2">
-              <Clock size={11} className="text-red-400 flex-shrink-0" />
-              <span className="text-red-300 font-medium">{r.start_time.slice(0, 5)} – {r.end_time.slice(0, 5)} น.</span>
-              <span className="text-slate-500 truncate">{r.title}</span>
+            <div key={r.id} className="flex items-center gap-2 text-sm bg-danger-bg border border-danger-line rounded-lg px-3 py-2">
+              <Clock size={13} className="text-danger flex-shrink-0" />
+              <span className="text-danger font-semibold">{r.start_time.slice(0, 5)} – {r.end_time.slice(0, 5)} น.</span>
+              <span className="text-ink-subtle truncate">{r.title}</span>
             </div>
           ))}
         </div>
       )}
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-3 text-xs text-slate-500 pt-1">
-        <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-emerald-900/40 border border-emerald-700/30" />ว่าง</span>
-        <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-amber-500/30 border border-amber-400/40" />เวลาเริ่ม</span>
-        <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-primary-600/50 border border-primary-400/50" />ช่วงที่เลือก</span>
-        <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-red-900/30 border border-red-700/30" />ถูกจอง</span>
+      <div className="flex flex-wrap gap-3 text-sm text-ink-muted pt-1">
+        <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-success-bg border border-success-line" />ว่าง</span>
+        <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-warning-bg border border-warning-line" />เวลาเริ่ม</span>
+        <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-primary-600" />ช่วงที่เลือก</span>
+        <span className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded bg-danger-bg border border-danger-line" />ถูกจอง</span>
       </div>
     </div>
   );
@@ -129,6 +135,12 @@ function ReserveContent() {
     const s = searchParams.get("step");
     return s === "2" ? 2 : 1;
   });
+  // Tracks which way the step content should slide: 1 = forward, -1 = backward.
+  const [stepDirection, setStepDirection] = useState(1);
+  const goToStep = (n: number) => {
+    setStepDirection(n > step ? 1 : -1);
+    setStep(n);
+  };
 
   // Step 1
   const [selectedDate, setSelectedDate] = useState<Date>(() => {
@@ -165,7 +177,6 @@ function ReserveContent() {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       setAuthLoading(false);
-      if (!data.user) router.push("/auth/login?redirect=/reserve");
     });
   }, []);
 
@@ -197,9 +208,6 @@ function ReserveContent() {
       has605: dayRes.some((r) => (r.room_ids || [r.room_id]).includes("smc-605")),
     };
   };
-
-  const calDays = eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
-  const startPadding = startOfMonth(currentMonth).getDay();
 
   // Room helpers
   const getRoomReservations = (roomId: string) =>
@@ -306,137 +314,162 @@ function ReserveContent() {
   };
 
   if (authLoading) return (
-    <div className="min-h-screen bg-surface-950 flex items-center justify-center">
+    <div className="min-h-screen bg-app flex items-center justify-center">
       <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-surface-950">
+    <div className="min-h-screen bg-app">
       <Navbar />
 
-      <div className="relative pt-16 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-950/50 to-transparent" />
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 py-10">
-          <h1 className="font-display text-3xl sm:text-4xl font-bold text-white mb-2">
-            <span className="gradient-text">จองห้องประชุม</span>
-          </h1>
-          <p className="text-slate-400">กรอกข้อมูลทีละขั้นตอนเพื่อจองห้องประชุม</p>
+      {/* No overflow-hidden here — the current step's size-morph animation needs room to grow without being clipped. */}
+      <div className="relative pt-16 bg-hero-gradient">
+        {/* Wider than the max-w-4xl content below — the row must never wrap, since a
+            wrap would stack the big current step awkwardly instead of keeping every
+            step on one line, so this container's bound is overridden to give it room. */}
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-10">
+          {/* Visually-hidden heading for a11y — the visible row below isn't a real <h1> since all 4 steps share one line. */}
+          <h1 className="sr-only">{STEPS.find((s) => s.n === step)?.label}</h1>
+
+          {/* Desktop/tablet (sm+): unified horizontal row, every step on one line, never
+              wrapping. Each item keeps the same DOM node across steps (just a className
+              swap), so framer-motion's `layout` prop auto-animates the size/position change
+              as the current step grows big and the rest shrink, instead of swapping elements
+              in and out. overflow-x-auto is just a safety net — no shared-layout boundary is
+              crossed here (unlike the old hero/step-bar split), so it can't clip the animation. */}
+          <div className="hidden sm:flex items-center justify-center flex-nowrap gap-3 overflow-x-auto scrollbar-hide pb-1">
+            {STEPS.map(({ n, label }, i, arr) => {
+              const isCurrent = step === n;
+              const done = step > n;
+              return (
+                <div key={n} className="flex items-center gap-3">
+                  <motion.div
+                    layout
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className={`flex-shrink-0 rounded-full flex items-center justify-center font-display font-bold border-2 transition-colors duration-300 ${isCurrent
+                      ? "w-16 h-16 text-3xl bg-primary-600 border-primary-600 text-ink-inverse"
+                      : done
+                        ? "w-9 h-9 text-base bg-primary-600 border-primary-600 text-ink-inverse"
+                        : "w-9 h-9 text-base border-line-strong text-ink-subtle"
+                      }`}
+                  >
+                    {done ? <CheckCircle size={18} /> : n}
+                  </motion.div>
+                  <motion.div
+                    layout
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className={`whitespace-nowrap font-display transition-colors duration-300 ${isCurrent
+                      ? "text-[2.25rem] sm:text-[3rem] lg:text-[4rem] font-black text-ink leading-tight"
+                      : `text-base font-semibold ${done ? "text-ink-muted" : "text-ink-subtle"}`
+                      }`}
+                  >
+                    {label}
+                  </motion.div>
+                  {i < arr.length - 1 && (
+                    <div className={`w-8 h-px transition-colors duration-300 ${step > n ? "bg-primary-600" : "bg-line-strong"}`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Mobile (below sm): portrait/vertical stepper instead of a horizontal scroller —
+              steps stack top to bottom with a connecting line down the left side, the current
+              step's circle+label growing in place via the same `layout`-driven animation. */}
+          <div className="flex sm:hidden flex-col">
+            {STEPS.map(({ n, label }, i, arr) => {
+              const isCurrent = step === n;
+              const done = step > n;
+              return (
+                <div key={n} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <motion.div
+                      layout
+                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                      className={`flex-shrink-0 rounded-full flex items-center justify-center font-display font-bold border-2 transition-colors duration-300 ${isCurrent
+                        ? "w-12 h-12 text-2xl bg-primary-600 border-primary-600 text-ink-inverse"
+                        : done
+                          ? "w-9 h-9 text-base bg-primary-600 border-primary-600 text-ink-inverse"
+                          : "w-9 h-9 text-base border-line-strong text-ink-subtle"
+                        }`}
+                    >
+                      {done ? <CheckCircle size={18} /> : n}
+                    </motion.div>
+                    {i < arr.length - 1 && (
+                      <div className={`w-px flex-1 min-h-[1.5rem] transition-colors duration-300 ${step > n ? "bg-primary-600" : "bg-line-strong"}`} />
+                    )}
+                  </div>
+                  <motion.div
+                    layout
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className={`font-display transition-colors duration-300 pb-4 ${isCurrent
+                      ? "text-[2.25rem] font-black text-ink leading-tight pt-1"
+                      : `text-base font-semibold pt-1.5 ${done ? "text-ink-muted" : "text-ink-subtle"}`
+                      }`}
+                  >
+                    {label}
+                  </motion.div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-16">
+        <p className="text-ink-muted text-lg font-medium mb-6 mt-8">กรอกข้อมูลทีละขั้นตอนเพื่อจองห้องประชุม</p>
 
-        {/* Step bar */}
-        <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2">
-          {[
-            { n: 1, label: "เลือกวันที่" },
-            { n: 2, label: "ห้อง & เวลา" },
-            { n: 3, label: "อุปกรณ์" },
-            { n: 4, label: "รายละเอียด" },
-          ].map(({ n, label }, i, arr) => (
-            <div key={n} className="flex items-center gap-2 flex-shrink-0">
-              <StepIndicator step={n} current={step} />
-              <span className={`text-sm font-medium whitespace-nowrap ${step === n ? "text-primary-300" : step > n ? "text-slate-400" : "text-slate-600"
-                }`}>{label}</span>
-              {i < arr.length - 1 && <div className={`w-8 h-px mx-1 ${step > n ? "bg-primary-600" : "bg-slate-700"}`} />}
-            </div>
-          ))}
-        </div>
-
+        <AnimatePresence mode="wait" custom={stepDirection}>
         {/* ═══ STEP 1: Calendar ═══ */}
         {step === 1 && (
-          <div className="glass rounded-2xl p-6 border border-primary-700/20">
-            <h2 className="font-display text-xl font-semibold text-white mb-5 flex items-center gap-2">
-              <Calendar size={20} className="text-primary-400" /> เลือกวันที่ต้องการจอง
+          <motion.div key="step-1" custom={stepDirection} variants={stepSlideVariants}
+            initial="enter" animate="center" exit="exit"
+            className="card rounded-2xl p-6">
+            <h2 className="text-ink mb-5 flex items-center gap-2">
+              <Calendar size={22} className="text-primary-600" /> เลือกวันที่ต้องการจอง
             </h2>
 
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-semibold text-white text-lg">
-                {format(currentMonth, "MMMM yyyy", { locale: th })}
-              </span>
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => { const p = new Date(currentMonth); p.setMonth(p.getMonth() - 1); setCurrentMonth(p); }}
-                  className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-all">
-                  <ChevronLeft size={18} />
-                </button>
-                <button type="button" onClick={() => { setCurrentMonth(new Date()); setSelectedDate(new Date()); }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium glass-light text-slate-300 hover:text-white transition-all">
-                  วันนี้
-                </button>
-                <button type="button" onClick={() => { const n = new Date(currentMonth); n.setMonth(n.getMonth() + 1); setCurrentMonth(n); }}
-                  className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-all">
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-7 mb-2">
-              {WEEKDAYS.map((d) => (
-                <div key={d} className="text-center text-xs font-semibold text-slate-500 py-2 uppercase tracking-wide">{d}</div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-7 gap-1">
-              {Array.from({ length: startPadding }).map((_, i) => <div key={`p${i}`} />)}
-              {calDays.map((day) => {
-                const isPast = isBefore(day, startOfDay(new Date()));
-                const isSelected = isSameDay(day, selectedDate);
-                const isCurrentDay = isToday(day);
-                const { has601, has605 } = getDayDots(day);
-                return (
-                  <button key={day.toString()} type="button" disabled={isPast}
-                    onClick={() => setSelectedDate(day)}
-                    onDoubleClick={() => { if (!isPast) { setSelectedDate(day); setStep(2); } }}
-                    className={`relative aspect-square flex flex-col items-center justify-center rounded-xl text-sm font-medium transition-all disabled:opacity-25 disabled:cursor-not-allowed
-                      ${isSelected ? "bg-primary-600 text-white shadow-glow scale-105"
-                        : isCurrentDay ? "border-2 border-accent-500/60 text-accent-300 hover:bg-white/5"
-                          : "text-slate-300 hover:bg-white/5 hover:text-white"}`}>
-                    <span>{format(day, "d")}</span>
-                    {(has601 || has605) && (
-                      <div className="flex gap-0.5 mt-0.5">
-                        {has601 && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white/60" : "bg-accent-400"}`} />}
-                        {has605 && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? "bg-white/40" : "bg-primary-400"}`} />}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/5 text-xs text-slate-400">
-              <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-accent-400" />SMC 601</span>
-              <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-primary-400" />SMC 605</span>
-            </div>
+            <MonthCalendar
+              currentMonth={currentMonth}
+              onMonthChange={setCurrentMonth}
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              onDoubleClickDate={(day) => { setSelectedDate(day); goToStep(2); }}
+              getDayDots={getDayDots}
+              disablePast
+            />
 
             <div className="mt-5 flex items-center justify-between">
-              <div className="px-4 py-2 rounded-xl bg-primary-900/30 border border-primary-700/30">
-                <p className="text-sm text-primary-300 font-medium">
+              <div className="px-4 py-2 rounded-xl bg-primary-50 border border-primary-200">
+                <p className="text-base text-primary-700 font-semibold">
                   {format(selectedDate, "EEEE d MMMM yyyy", { locale: th })}
                 </p>
               </div>
-              <button type="button" onClick={() => setStep(2)}
-                className="px-6 py-2.5 rounded-xl btn-accent font-semibold text-sm flex items-center gap-2">
-                ถัดไป <ChevronRight size={16} />
+              <button type="button" onClick={() => goToStep(2)}
+                className="px-6 py-3 btn-primary font-bold text-base flex items-center gap-2">
+                ถัดไป <ChevronRight size={18} />
               </button>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* ═══ STEP 2: Rooms & Time ═══ */}
         {step === 2 && (
-          <div className="space-y-4">
+          <motion.div key="step-2" custom={stepDirection} variants={stepSlideVariants}
+            initial="enter" animate="center" exit="exit"
+            className="space-y-4">
             <div className="flex items-center justify-between">
-              <button type="button" onClick={() => setStep(1)}
-                className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-all">
-                <ChevronLeft size={16} /> ย้อนกลับ
+              <button type="button" onClick={() => goToStep(1)}
+                className="flex items-center gap-1.5 text-base text-ink-muted hover:text-ink transition-all">
+                <ChevronLeft size={18} /> ย้อนกลับ
               </button>
-              <p className="text-sm text-primary-300 font-medium">
+              <p className="text-base text-primary-700 font-semibold">
                 {format(selectedDate, "EEEE d MMMM yyyy", { locale: th })}
               </p>
             </div>
 
-            <p className="text-xs text-slate-400">คลิกที่ห้องเพื่อดูช่วงเวลาว่างและเลือกเวลา</p>
+            <p className="text-sm text-ink-muted">คลิกที่ห้องเพื่อดูช่วงเวลาว่างและเลือกเวลา</p>
 
             {ROOMS.map((room) => {
               const isExpanded = expandedRooms.has(room.id);
@@ -444,24 +477,22 @@ function ReserveContent() {
               // Confirmed = has a valid time set (regardless of expand state)
               const isConfirmed = !!(rt.start && rt.end && !rt.tapStart);
               const roomRes = getRoomReservations(room.id);
+              const style = getRoomStyle(getRoomTheme(room.id));
 
               return (
-                <div key={room.id} className={`glass rounded-2xl border-2 transition-all overflow-hidden ${isConfirmed ? "border-primary-500" : isExpanded ? "border-primary-700/50" : "border-white/10"
+                <div key={room.id} className={`card rounded-2xl border-2 transition-all overflow-hidden ${isConfirmed ? "border-primary-500" : isExpanded ? "border-primary-300" : "border-line"
                   }`}>
                   {/* Room header — always visible, click to expand */}
                   <button type="button" onClick={() => toggleExpand(room.id)}
-                    className="w-full flex items-center justify-between p-5 text-left hover:bg-white/[0.02] transition-all">
+                    className="w-full flex items-center justify-between p-5 text-left hover:bg-surface-hover transition-all">
                     <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-display font-bold text-lg flex-shrink-0 ${room.id === "smc-601"
-                        ? "bg-accent-500/20 text-accent-300 border border-accent-500/30"
-                        : "bg-primary-500/20 text-primary-300 border border-primary-500/30"
-                        }`}>
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center font-display font-bold text-lg flex-shrink-0 ${style.badgeBg}`}>
                         {room.id === "smc-601" ? "601" : "605"}
                       </div>
                       <div>
-                        <h3 className="font-display font-bold text-white text-lg">{room.name}</h3>
-                        <p className="text-slate-400 text-sm flex items-center gap-1.5">
-                          <Users size={12} /> {room.capacity} คน · {room.description}
+                        <h3 className="text-ink">{room.name}</h3>
+                        <p className="text-ink-muted text-base flex items-center gap-1.5">
+                          <Users size={14} /> {room.capacity} คน · {room.description}
                         </p>
                       </div>
                     </div>
@@ -470,26 +501,25 @@ function ReserveContent() {
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {isConfirmed ? (
                         <>
-                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-primary-600/30 text-primary-300 border border-primary-500/30">
+                          <span className="px-3 py-1 rounded-full text-sm font-semibold bg-primary-100 text-primary-700 border border-primary-200">
                             {rt.start} – {rt.end} น.
                           </span>
                           <button type="button" onClick={(e) => { e.stopPropagation(); clearRoom(room.id); }}
-                            className="p-1 rounded-lg text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-all">
-                            <X size={14} />
+                            className="p-1 rounded-btn text-ink-subtle hover:text-danger hover:bg-danger-bg transition-all">
+                            <X size={16} />
                           </button>
                         </>
                       ) : (
-                        <ChevronRight size={18} className={`text-slate-500 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`} />
+                        <ChevronRight size={20} className={`text-ink-subtle transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`} />
                       )}
                     </div>
                   </button>
 
                   {/* Slot grid — only show when expanded */}
                   {isExpanded && (
-                    <div className="px-5 pb-5 border-t border-white/5">
+                    <div className="px-5 pb-5 border-t border-line">
                       <div className="pt-4">
                         <RoomSlotGrid
-                          roomId={room.id}
                           roomTime={rt}
                           onTap={(slot) => handleSlotTap(room.id, slot)}
                           isSlotBooked={(slot) => isSlotBooked(room.id, slot)}
@@ -505,25 +535,27 @@ function ReserveContent() {
             <div className="flex justify-end pt-2">
               <button type="button"
                 disabled={confirmedRooms.length === 0 || anyPending}
-                onClick={() => setStep(3)}
-                className="px-6 py-2.5 rounded-xl btn-accent font-semibold text-sm flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
-                ถัดไป <ChevronRight size={16} />
+                onClick={() => goToStep(3)}
+                className="px-6 py-3 btn-primary font-bold text-base flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
+                ถัดไป <ChevronRight size={18} />
               </button>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* ═══ STEP 3: Equipment ═══ */}
         {step === 3 && (
-          <div className="glass rounded-2xl p-6 border border-primary-700/20">
-            <button type="button" onClick={() => setStep(2)}
-              className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-all mb-5">
-              <ChevronLeft size={16} /> ย้อนกลับ
+          <motion.div key="step-3" custom={stepDirection} variants={stepSlideVariants}
+            initial="enter" animate="center" exit="exit"
+            className="card rounded-2xl p-6">
+            <button type="button" onClick={() => goToStep(2)}
+              className="flex items-center gap-1.5 text-base text-ink-muted hover:text-ink transition-all mb-5">
+              <ChevronLeft size={18} /> ย้อนกลับ
             </button>
-            <h2 className="font-display text-xl font-semibold text-white mb-1 flex items-center gap-2">
-              <Wrench size={20} className="text-primary-400" /> อุปกรณ์ที่ต้องการ
+            <h2 className="text-ink mb-1 flex items-center gap-2">
+              <Wrench size={22} className="text-primary-600" /> อุปกรณ์ที่ต้องการ
             </h2>
-            <p className="text-xs text-slate-500 mb-6">เลือกได้มากกว่า 1 รายการ (ไม่บังคับ)</p>
+            <p className="text-sm text-ink-muted mb-6">เลือกได้มากกว่า 1 รายการ (ไม่บังคับ)</p>
 
             <div className="grid grid-cols-3 gap-4 mb-6">
               {EQUIPMENT_OPTIONS.map((eq) => {
@@ -531,112 +563,114 @@ function ReserveContent() {
                 const IconComp = ICON_MAP[eq.iconName];
                 return (
                   <button key={eq.id} type="button" onClick={() => toggleEquipment(eq.id)}
-                    className={`flex flex-col items-center gap-3 p-5 rounded-xl border-2 transition-all ${active ? "border-primary-500 bg-primary-600/20" : "border-white/10 hover:border-primary-600/30 hover:bg-primary-900/10"
+                    className={`flex flex-col items-center gap-3 p-5 rounded-btn border-2 transition-all ${active ? "border-primary-500 bg-primary-50" : "border-line hover:border-primary-200 hover:bg-primary-50/40"
                       }`}>
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${active ? "bg-primary-600 text-white" : "bg-white/10 text-slate-400"
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all ${active ? "bg-primary-600 text-ink-inverse" : "bg-surface-muted text-ink-subtle"
                       }`}>
-                      {IconComp && <IconComp size={22} />}
+                      {IconComp && <IconComp size={24} />}
                     </div>
-                    <span className={`text-sm font-medium text-center leading-tight ${active ? "text-primary-300" : "text-slate-400"}`}>
+                    <span className={`text-base font-semibold text-center leading-tight ${active ? "text-primary-700" : "text-ink-muted"}`}>
                       {eq.label}
                     </span>
-                    {active && <div className="w-2 h-2 rounded-full bg-primary-400" />}
+                    {active && <div className="w-2 h-2 rounded-full bg-primary-500" />}
                   </button>
                 );
               })}
             </div>
 
             <div className="flex justify-end">
-              <button type="button" onClick={() => setStep(4)}
-                className="px-6 py-2.5 rounded-xl btn-accent font-semibold text-sm flex items-center gap-2">
-                ถัดไป <ChevronRight size={16} />
+              <button type="button" onClick={() => goToStep(4)}
+                className="px-6 py-3 btn-primary font-bold text-base flex items-center gap-2">
+                ถัดไป <ChevronRight size={18} />
               </button>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* ═══ STEP 4: Details ═══ */}
         {step === 4 && (
-          <div className="space-y-5">
-            <button type="button" onClick={() => setStep(3)}
-              className="flex items-center gap-1.5 text-sm text-slate-400 hover:text-white transition-all">
-              <ChevronLeft size={16} /> ย้อนกลับ
+          <motion.div key="step-4" custom={stepDirection} variants={stepSlideVariants}
+            initial="enter" animate="center" exit="exit"
+            className="space-y-5">
+            <button type="button" onClick={() => goToStep(3)}
+              className="flex items-center gap-1.5 text-base text-ink-muted hover:text-ink transition-all">
+              <ChevronLeft size={18} /> ย้อนกลับ
             </button>
 
-            <div className="glass rounded-2xl p-6 border border-primary-700/20 space-y-5">
-              <h2 className="font-display text-xl font-semibold text-white flex items-center gap-2">
-                <FileText size={20} className="text-primary-400" /> รายละเอียดการจอง
+            <div className="card rounded-2xl p-6 space-y-5">
+              <h2 className="text-ink flex items-center gap-2">
+                <FileText size={22} className="text-primary-600" /> รายละเอียดการจอง
               </h2>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  <GraduationCap size={14} className="inline mr-1.5 text-slate-400" />
-                  สาขาวิชา <span className="text-red-400">*</span>
+                <label className="block text-sm font-semibold text-ink-muted mb-1.5">
+                  <GraduationCap size={16} className="inline mr-1.5 text-ink-subtle" />
+                  สาขาวิชา <span className="text-danger">*</span>
                 </label>
                 <select value={department} onChange={(e) => setDepartment(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl input-dark text-sm cursor-pointer">
+                  className="w-full px-4 py-3 rounded-xl input-field text-base cursor-pointer">
                   <option value="" disabled>เลือกสาขาวิชา</option>
                   {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  <Phone size={14} className="inline mr-1.5 text-slate-400" />
+                <label className="block text-sm font-semibold text-ink-muted mb-1.5">
+                  <Phone size={16} className="inline mr-1.5 text-ink-subtle" />
                   เบอร์ติดต่อภายใน
-                  <span className="ml-1.5 text-xs text-slate-500">(ไม่บังคับ)</span>
+                  <span className="ml-1.5 text-xs text-ink-subtle">(ไม่บังคับ)</span>
                 </label>
                 <input type="text" value={phoneInternal} onChange={(e) => setPhoneInternal(e.target.value)}
-                  placeholder="เช่น 1234" className="w-full px-4 py-3 rounded-xl input-dark text-sm" maxLength={10} />
+                  placeholder="เช่น 1234" className="w-full px-4 py-3 rounded-xl input-field text-base" maxLength={10} />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  <User size={14} className="inline mr-1.5 text-slate-400" />
-                  ชื่อผู้สอน <span className="text-red-400">*</span>
+                <label className="block text-sm font-semibold text-ink-muted mb-1.5">
+                  <User size={16} className="inline mr-1.5 text-ink-subtle" />
+                  ชื่อผู้สอน <span className="text-danger">*</span>
                 </label>
                 <input type="text" value={instructorName} onChange={(e) => setInstructorName(e.target.value)}
-                  placeholder="กรอกชื่อ-นามสกุล ผู้สอน" className="w-full px-4 py-3 rounded-xl input-dark text-sm" maxLength={100} />
+                  placeholder="กรอกชื่อ-นามสกุล ผู้สอน" className="w-full px-4 py-3 rounded-xl input-field text-base" maxLength={100} />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                  หมายเหตุ <span className="ml-1.5 text-xs text-slate-500">(ไม่บังคับ)</span>
+                <label className="block text-sm font-semibold text-ink-muted mb-1.5">
+                  หมายเหตุ <span className="ml-1.5 text-xs text-ink-subtle">(ไม่บังคับ)</span>
                 </label>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)}
                   placeholder="รายละเอียดเพิ่มเติม..." rows={3}
-                  className="w-full px-4 py-3 rounded-xl input-dark text-sm resize-none" maxLength={500} />
+                  className="w-full px-4 py-3 rounded-xl input-field text-base resize-none" maxLength={500} />
               </div>
             </div>
 
             {/* Summary */}
-            <div className="glass rounded-2xl p-5 border border-primary-700/20">
-              <h3 className="font-display font-semibold text-white mb-4">สรุปการจอง</h3>
-              <div className="space-y-2 text-sm">
+            <div className="card rounded-2xl p-5">
+              <h3 className="text-ink mb-4">สรุปการจอง</h3>
+              <div className="space-y-2 text-base">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">วันที่</span>
-                  <span className="text-white font-medium">{format(selectedDate, "d MMM yyyy", { locale: th })}</span>
+                  <span className="text-ink-muted">วันที่</span>
+                  <span className="text-ink font-semibold">{format(selectedDate, "d MMM yyyy", { locale: th })}</span>
                 </div>
                 {confirmedRooms.map((id) => {
                   const rt = roomTimes[id];
                   const room = ROOMS.find((r) => r.id === id);
                   return (
                     <div key={id} className="flex justify-between">
-                      <span className="text-slate-400">{room?.name}</span>
-                      <span className="text-white font-medium">{rt.start} – {rt.end} น.</span>
+                      <span className="text-ink-muted">{room?.name}</span>
+                      <span className="text-ink font-semibold">{rt.start} – {rt.end} น.</span>
                     </div>
                   );
                 })}
                 {selectedEquipment.length > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-slate-400">อุปกรณ์</span>
-                    <span className="text-white font-medium">{selectedEquipment.map((eq) => EQUIPMENT_OPTIONS.find((e) => e.id === eq)?.label).join(", ")}</span>
+                    <span className="text-ink-muted">อุปกรณ์</span>
+                    <span className="text-ink font-semibold">{selectedEquipment.map((eq) => EQUIPMENT_OPTIONS.find((e) => e.id === eq)?.label).join(", ")}</span>
                   </div>
                 )}
                 {department && (
                   <div className="flex justify-between">
-                    <span className="text-slate-400">สาขา</span>
-                    <span className="text-white font-medium">{department}</span>
+                    <span className="text-ink-muted">สาขา</span>
+                    <span className="text-ink font-semibold">{department}</span>
                   </div>
                 )}
               </div>
@@ -644,20 +678,21 @@ function ReserveContent() {
 
             <button type="button" onClick={handleSubmit}
               disabled={submitting || !department || !instructorName}
-              className="w-full py-4 rounded-xl btn-accent font-display font-semibold text-base disabled:opacity-40 disabled:cursor-not-allowed">
+              className="w-full py-4 btn-primary font-display font-bold text-lg disabled:opacity-40 disabled:cursor-not-allowed">
               {submitting ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-ink-inverse/30 border-t-ink-inverse rounded-full animate-spin" />
                   กำลังจอง...
                 </span>
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  <CheckCircle size={18} /> ยืนยันการจอง
+                  <CheckCircle size={20} /> ยืนยันการจอง
                 </span>
               )}
             </button>
-          </div>
+          </motion.div>
         )}
+        </AnimatePresence>
 
       </div>
     </div>
@@ -667,7 +702,7 @@ function ReserveContent() {
 export default function ReservePage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-surface-950 flex items-center justify-center">
+      <div className="min-h-screen bg-app flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
       </div>
     }>
